@@ -10,6 +10,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
+
     <groupId>no.group3.replicated-banking-system.message-delivery-server</groupId>
     <artifactId>message-delivery-server</artifactId>
 
