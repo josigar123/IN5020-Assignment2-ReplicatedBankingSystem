@@ -22,5 +22,11 @@ public class MessageDeliveryServiceImpl implements MessageDeliveryService{
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'sendTransactions'");
     }
+
+    @Override
+    public void ackBroadcast(String bankName, int broadCastId) throws RemoteException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'ackBroadcast'");
+    }
     
 }
