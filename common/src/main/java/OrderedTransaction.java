@@ -9,4 +9,12 @@ public class OrderedTransaction implements Serializable {
         this.order = order;
         this.transaction = transaction;
     }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public Transaction getTransaction() {
+        return transaction;
+    }
 }

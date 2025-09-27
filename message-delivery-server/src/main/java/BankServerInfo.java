@@ -1,23 +1,18 @@
 public class BankServerInfo {
 
+    private String name;
     private BankService bank;
-    private String status = "INACTIVE";
-    private Long timeSinceLastAck = null;
 
-    public BankServerInfo(BankService bank) {
+    public BankServerInfo(BankService bank, String name) {
         this.bank = bank;
+        this.name = name;
+    }
+
+    public String getName(){
+        return name;
     }
 
     public BankService getBank() {
         return bank;
-    }
-    public void setBank(BankService bank) {}
-
-    public String getStatus() {
-        return status;
-    }
-
-    public Long getTimeSinceLastAck() {
-        return timeSinceLastAck;
     }
 }

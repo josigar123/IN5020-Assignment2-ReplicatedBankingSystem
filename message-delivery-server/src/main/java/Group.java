@@ -1,29 +1,35 @@
-import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Group {
 
     private String groupName;
-    private List<BankServerInfo> members;
+    private Map<String, BankServerInfo> members = new ConcurrentHashMap<>();
+    private volatile int currentBalance;
 
     public Group(String groupName){
         this.groupName = groupName;
-        this.members = Collections.synchronizedList(new ArrayList<>());
     }
 
     public void join(BankServerInfo member){
-        members.add(member);
+        members.put(member.getName(), member);
     }
 
-    public void leave(BankServerInfo member){
-        members.remove(member);
+    public void leave(String bankName){
+        members.remove(bankName);
     }
 
     public List<BankServerInfo> getMembers() {
-        // return a copy to avoid concurrent modification
-        synchronized (members) {
-            return new ArrayList<>(members);
-        }
+        return new ArrayList<>(members.values());
+    }
+
+    public int getCurrentBalance() {
+        return currentBalance;
+    }
+
+    public void setCurrentBalance(int currentBalance) {
+        this.currentBalance = currentBalance;
     }
 }
