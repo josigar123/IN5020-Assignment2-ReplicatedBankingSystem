@@ -1,8 +1,16 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.OptionalInt;
+import java.util.Map;
 
 public class BankServer {
 
@@ -53,5 +61,38 @@ public class BankServer {
             e.printStackTrace();
             System.exit(2);
         }
+    }
+    private static List<String> readAllLines(File f) throws IOException { 
+        List<String> out;
+        out = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) { 
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#")) out.add(line); 
+            }
+        }
+        return out;
+    }
+
+    @SuppressWarnings("CallToPrintStackTrace")
+    private static Map<String, CurrencyInfo> initializeCurrency(String pathToRateFile){ 
+        List<String> lines;
+        try {
+            lines = readAllLines(new File(pathToRateFile));   
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        Map<String,CurrencyInfo> retValue = new HashMap<>();
+
+        for(String line: lines){
+            String[] parts = line.split("\\s+");
+            CurrencyInfo newCurrency = new CurrencyInfo(parts[0], Double.parseDouble(parts[1]));
+            retValue.put(parts[0], newCurrency);
+        }
+
+        return retValue;
     }
 }
