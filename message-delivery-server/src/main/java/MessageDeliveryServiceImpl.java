@@ -56,4 +56,9 @@ public class MessageDeliveryServiceImpl implements MessageDeliveryService{
     public int getNumberOfMembers(String groupName) throws RemoteException {
         return coordinators.get(groupName).getGroup().getMembers().size();
     }
+
+    @Override
+    public List<String> getMemberNames(String groupName) throws RemoteException {
+        return coordinators.get(groupName).getGroup().getMembersBynNames();
+    }
 }
