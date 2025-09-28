@@ -6,18 +6,14 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.Map;
+import java.util.*;
 
 public class BankServer {
 
     private static final String REGISTRY_IP = "localhost";
     private static final int REGISTRY_PORT = 1099;
 
-      // For 8-10 mettods
+      // For 8-10 methods
     private static volatile List<String> CURRENT_MEMBERS = List.of();
     public static void setCurrentMembers(List<String> members) {
         CURRENT_MEMBERS = List.copyOf(members);
@@ -49,11 +45,12 @@ public class BankServer {
             System.out.println("[BANK] Bound BankService as: " + bankBindingName);
 
             // 4) Join the group on MDS (MDS will look up this bank stub using bankBindingName)
-            OptionalInt maybeBalance = mds.joinGroup(groupName, bankBindingName);
-            maybeBalance.ifPresent(value -> {
-                System.out.println("[BANK] Initial balance from MDS: " + value);
-                bankImpl.setInitialBalance(value, "USD"); // change currency if you use another
-            });
+            Map<String, Double> maybeBalance = mds.joinGroup(groupName, bankBindingName);
+
+            if(!maybeBalance.isEmpty()){
+                System.out.println("[BANK] Bank joined group, setting initial balances...");
+                bankImpl.setInitialBalance(maybeBalance);
+            }
 
             System.out.println("[BANK] Bank server started");
 
@@ -68,6 +65,7 @@ public class BankServer {
             System.exit(2);
         }
     }
+
     private static List<String> readAllLines(File f) throws IOException { 
         List<String> out;
         out = new ArrayList<>();
