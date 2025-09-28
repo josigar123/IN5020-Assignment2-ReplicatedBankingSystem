@@ -1,13 +1,38 @@
 
 import java.util.Collection;
 import java.util.Map;
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 public class BankRepository{
-    public class Transaction{};
+    public static class Transaction{
+        public final String command; 
+        public final String uniqueId;  
+
+        public Transaction(String command, String uniqueId) {
+            this.command = command;
+            this.uniqueId = uniqueId;
+        }
+    };
 
     private final Map<String, CurrencyInfo> currencies;
     private final Collection<Transaction> outstanding_collections;
+
+    //For history and metods 5-7
+    private final List<ExecutedEntry> executedList = new CopyOnWriteArrayList<>();
+    private final AtomicLong orderCounter = new AtomicLong(0); 
+     private static final class ExecutedEntry {
+        final long orderNo;
+        final Instant executedAt;
+        final Transaction tx;
+        ExecutedEntry(long orderNo, Instant executedAt, Transaction tx) {
+            this.orderNo = orderNo; this.executedAt = executedAt; this.tx = tx;
+        }
+    }
+
 
     public BankRepository(Map<String, CurrencyInfo> currencies, Collection<Transaction> outstanding_collections){
         this.currencies = currencies;
@@ -59,4 +84,49 @@ public class BankRepository{
             outstanding_collections.notifyAll();
         }
     }
+
+     // (5) getHistory
+    public String getHistory() {
+        StringBuilder sb = new StringBuilder();
+        long start = orderCounter.get() - executedList.size();
+
+        sb.append("executed_list\n");
+        for (int i = 0; i < executedList.size(); i++) {
+            ExecutedEntry e = executedList.get(i);
+            long n = start + i + 1; 
+            sb.append(n).append(". ")
+              .append(e.executedAt).append(" ")
+              .append(e.tx.command).append("\n");
+        }
+
+        sb.append("\noutstanding_collection\n");
+        for (Transaction t : outstanding_collections) {
+            sb.append(t.command).append("\n"); 
+        }
+        return sb.toString();
+    }
+
+    // (6) checkTxStatus <unique_id>
+    public String checkTxStatus(String uniqueId) {
+        for (ExecutedEntry e : executedList) {
+            if (e.tx.uniqueId.equals(uniqueId)) return "APPLIED";
+        }
+        for (Transaction t : outstanding_collections) {
+            if (t.uniqueId.equals(uniqueId)) return "OUTSTANDING";
+        }
+        return "UNKNOWN";
+    }
+
+     // (7) cleanHistory – clean executed_list (not counter)
+    public void cleanHistory() {
+        executedList.clear();
+    }
+
+    // Helper for when the batch is sent
+    public void recordExecuted(Transaction t) {
+        long n = orderCounter.incrementAndGet();
+        executedList.add(new ExecutedEntry(n, Instant.now(), t));
+    }
+
+
 }
