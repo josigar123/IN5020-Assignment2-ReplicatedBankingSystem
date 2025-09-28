@@ -8,12 +8,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TransactionCoordinator {
 
     private final Group group; // Group to coordinate
-    private final AtomicInteger orderCounter;
+
+    private final AtomicInteger orderCounter = new AtomicInteger(1);;
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     public TransactionCoordinator(Group group) {
         this.group = group;
-        orderCounter = new AtomicInteger(1);
     }
 
     private boolean sendWithRetry(BankService bank, List<OrderedTransaction> batch) {
