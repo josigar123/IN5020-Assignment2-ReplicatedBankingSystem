@@ -7,7 +7,7 @@ public class Group {
 
     private String groupName;
     private Map<String, BankServerInfo> members = new ConcurrentHashMap<>();
-    private volatile double currentBalance;
+    private Map<String, Double> currencyBalances = new ConcurrentHashMap<>();
 
     public Group(String groupName){
         this.groupName = groupName;
@@ -25,16 +25,16 @@ public class Group {
         return new ArrayList<>(members.values());
     }
 
-    public List<String> getMembersBynNames(){
+    public List<String> getMembersByNames(){
         return new ArrayList<>(members.keySet());
     }
 
-    public double getCurrentBalance() {
-        return currentBalance;
+    public Map<String, Double> getCurrentBalance() {
+        return Map.copyOf(currencyBalances);
     }
 
-    public void setCurrentBalance(double currentBalance) {
-        this.currentBalance = currentBalance;
+    public void setCurrentBalance(Map<String, Double> currencyBalances) {
+        this.currencyBalances = new ConcurrentHashMap<>(currencyBalances);
     }
 
     public String getGroupName() {
