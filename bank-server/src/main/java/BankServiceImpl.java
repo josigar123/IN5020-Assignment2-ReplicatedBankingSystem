@@ -16,7 +16,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     @Override
     public boolean deliverOrderedBatch(List<OrderedTransaction> orderedTransactions) throws RemoteException {
-        // implementere her 
+        throw  new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -26,14 +26,14 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     }
 
     @Override
-    public double getBalance(String group, String currency) throws RemoteException {
-        if (!this.groupName.equals(group)) return 0.0;
-        return balanceByCurrency.getOrDefault(currency, 0.0);
+    public Map<String, Double> getBalance() throws RemoteException {
+        return Map.copyOf(balanceByCurrency);
     }
 
 
-  public void setInitialBalance(int value, String currency) {
-        balanceByCurrency.put(currency, (double) value);
+  public void setInitialBalance(Map<String, Double> initialBalance) throws RemoteException {
+      balanceByCurrency.clear();
+      balanceByCurrency.putAll(initialBalance);
     }
 }
 
