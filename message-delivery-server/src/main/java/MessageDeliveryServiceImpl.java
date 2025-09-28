@@ -3,57 +3,57 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MessageDeliveryServiceImpl implements MessageDeliveryService{
 
-    private final TransactionCoordinator coordinator;
+    // A map of coordinators for multiple groups
+    private final Map<String, TransactionCoordinator> coordinators;
     private final String REGISTRY_IP = "localhost";
     private final int REGISTRY_PORT = 1099;
     private final Registry registry;
 
-    public MessageDeliveryServiceImpl(TransactionCoordinator coordinator) throws RemoteException {
-        this.coordinator = coordinator;
+    public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators) throws RemoteException {
+        this.coordinators = coordinators;
         registry = LocateRegistry.getRegistry(REGISTRY_IP, REGISTRY_PORT);
     }
 
-    /*
-        If new bank arrives after system start
-        Set its balance to the current one
-     */
     @Override
-    public OptionalInt joinGroup(String groupName, String bankServer) throws RemoteException {
+    public OptionalDouble joinGroup(String groupName, String bankServer) throws RemoteException {
 
         try{
+            // Get the coordinator for the group
+            TransactionCoordinator coordinator = coordinators.get(groupName);
+
             BankService bank = (BankService) registry.lookup(bankServer);
             BankServerInfo bankServerInfo = new BankServerInfo(bank, bankServer);
 
-            Group group =  coordinator.getGroup();
+            coordinator.getGroup().join(bankServerInfo);
 
-            group.join(bankServerInfo);
-
-            return OptionalInt.of(group.getCurrentBalance()); // bank sets its balance to this value if not null
+            return OptionalDouble.of(coordinator.getGroup().getCurrentBalance()); // bank sets its balance to this value if present
         }
         catch(NotBoundException e){
             System.err.println(e.getMessage());
-            return OptionalInt.empty();
+            return OptionalDouble.empty();
         }
     }
 
     @Override
     public void leaveGroup(String groupName, String bankServer) throws RemoteException {
-        Group group = coordinator.getGroup();
+        Group group = coordinators.get(groupName).getGroup();
         group.leave(bankServer);
     }
 
     @Override
-    public void sendTransactions(List<Transaction> transactions) throws RemoteException {
-        coordinator.setTransactionOrder(transactions);
-        coordinator.broadCastTransactions();
+    public void sendTransactions(String groupName, List<Transaction> transactions) throws RemoteException {
+        List<OrderedTransaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
+        coordinators.get(groupName).broadCastTransactions(orderedTransactions);
     }
 
     @Override
     public int getNumberOfMembers(String groupName) throws RemoteException {
-        return coordinator.getGroup().getMembers().size();
+        return coordinators.get(groupName).getGroup().getMembers().size();
     }
 }
