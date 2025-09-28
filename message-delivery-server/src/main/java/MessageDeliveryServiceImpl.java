@@ -4,7 +4,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MessageDeliveryServiceImpl implements MessageDeliveryService{
@@ -21,7 +20,7 @@ public class MessageDeliveryServiceImpl implements MessageDeliveryService{
     }
 
     @Override
-    public OptionalDouble joinGroup(String groupName, String bankServer) throws RemoteException {
+    public Map<String, Double> joinGroup(String groupName, String bankServer) throws RemoteException {
 
         try{
             // Get the coordinator for the group
@@ -32,11 +31,11 @@ public class MessageDeliveryServiceImpl implements MessageDeliveryService{
 
             coordinator.getGroup().join(bankServerInfo);
 
-            return OptionalDouble.of(coordinator.getGroup().getCurrentBalance()); // bank sets its balance to this value if present
+            return coordinator.getGroup().getCurrentBalance(); // bank sets its balance to this value if present
         }
         catch(NotBoundException e){
             System.err.println(e.getMessage());
-            return OptionalDouble.empty();
+            return null;
         }
     }
 
@@ -59,6 +58,6 @@ public class MessageDeliveryServiceImpl implements MessageDeliveryService{
 
     @Override
     public List<String> getMemberNames(String groupName) throws RemoteException {
-        return coordinators.get(groupName).getGroup().getMembersBynNames();
+        return coordinators.get(groupName).getGroup().getMembersByNames();
     }
 }
