@@ -1,20 +1,19 @@
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransactionCoordinator {
 
     private final Group group; // Group to coordinate
-    private final List<OrderedTransaction> orderedTransactions;
     private final AtomicInteger orderCounter;
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     public TransactionCoordinator(Group group) {
         this.group = group;
         orderCounter = new AtomicInteger(1);
-        orderedTransactions = Collections.synchronizedList(new ArrayList<>());
     }
 
     private boolean sendWithRetry(BankService bank, List<OrderedTransaction> batch) {
@@ -28,7 +27,7 @@ public class TransactionCoordinator {
                 boolean ack = future.get(2, TimeUnit.SECONDS);
                 if(ack){
                     System.out.println("ACK from bank after " + attempt + " attempt(s)");
-                    int bankBalance = bank.getBalance();
+                    double bankBalance = bank.getBalance(group.getGroupName(), "USD");
 
                     if(bankBalance != group.getCurrentBalance()){
                         System.out.println("Setting current balance to " + bankBalance);
@@ -57,19 +56,14 @@ public class TransactionCoordinator {
     }
 
     // Method must broadcast received transactions to all group members
-    public void broadCastTransactions() {
-
-        List<OrderedTransaction> batch;
-        synchronized (orderedTransactions) {
-            batch = new ArrayList<>(orderedTransactions);
-        }
+    public void broadCastTransactions(List<OrderedTransaction> orderedTransactions) {
 
         for(BankServerInfo bankServerInfo : group.getMembers()){
 
             BankService bank = bankServerInfo.getBank();
 
             executor.submit(() -> {
-                boolean success = sendWithRetry(bank, batch);
+                boolean success = sendWithRetry(bank, orderedTransactions);
                 if(!success){
                     evictFailedServer(bankServerInfo.getName());
                 }
@@ -77,10 +71,12 @@ public class TransactionCoordinator {
         }
     }
 
-    public void setTransactionOrder(List<Transaction> transactions) {
+    public List<OrderedTransaction> setTransactionOrder(List<Transaction> transactions) {
+        List<OrderedTransaction> orderedBatch = new ArrayList<>();
         for (Transaction transaction : transactions) {
-            orderedTransactions.add(new OrderedTransaction(orderCounter.getAndIncrement(), transaction));
+            orderedBatch.add(new OrderedTransaction(orderCounter.getAndIncrement(), transaction));
         }
+        return orderedBatch;
     }
 
     public Group getGroup() {
