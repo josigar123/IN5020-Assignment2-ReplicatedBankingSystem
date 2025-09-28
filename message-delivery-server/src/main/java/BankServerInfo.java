@@ -1,7 +1,7 @@
 public class BankServerInfo {
 
-    private String name;
-    private BankService bank;
+    private final String name;
+    private final BankService bank;
 
     public BankServerInfo(BankService bank, String name) {
         this.bank = bank;
