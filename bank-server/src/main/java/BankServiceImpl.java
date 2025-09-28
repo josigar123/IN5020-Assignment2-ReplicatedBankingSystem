@@ -8,7 +8,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     private final String groupName;
     private final Map<String, Double> balanceByCurrency = new ConcurrentHashMap<>();
-    private volatile List<String> currentMembers = List.of();
+    
 
     public BankServiceImpl(String groupName) throws RemoteException {
         this.groupName = groupName;
@@ -22,7 +22,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     @Override
     public void onMembershipChange(String group, List<String> currentReplicaIds) throws RemoteException {
         if (!this.groupName.equals(group)) return;
-        this.currentMembers = List.copyOf(currentReplicaIds);
+        BankServer.setCurrentMembers(currentReplicaIds);
     }
 
     @Override

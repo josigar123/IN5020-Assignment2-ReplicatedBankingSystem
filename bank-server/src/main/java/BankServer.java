@@ -17,6 +17,12 @@ public class BankServer {
     private static final String REGISTRY_IP = "localhost";
     private static final int REGISTRY_PORT = 1099;
 
+      // For 8-10 mettods
+    private static volatile List<String> CURRENT_MEMBERS = List.of();
+    public static void setCurrentMembers(List<String> members) {
+        CURRENT_MEMBERS = List.copyOf(members);
+    }
+
     public static void main(String[] args) throws RemoteException {
         if (args.length < 3) {
             System.err.println("Usage: BankServer <groupName> <bankBindingName> <mdsBindingName>");
@@ -95,4 +101,26 @@ public class BankServer {
 
         return retValue;
     }
+
+
+    // (8) memberInfo
+    public static String memberInfo() {
+        return CURRENT_MEMBERS.isEmpty() ? "(no members)" : String.join("\n", CURRENT_MEMBERS);
+    }
+
+    // (9) sleep <seconds>
+    public static String sleepSeconds(double seconds) {
+        long ms = Math.round(seconds * 1000.0);
+        try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+        return "OK";
+    }
+
+
+    // (10) exit
+    public static void exitProcess() {
+        System.out.println("[BANK] Exiting...");
+        System.exit(0);
+    }
+
+
 }
