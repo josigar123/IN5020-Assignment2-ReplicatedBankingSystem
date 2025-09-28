@@ -25,6 +25,10 @@ public class Group {
         return new ArrayList<>(members.values());
     }
 
+    public List<String> getMembersBynNames(){
+        return new ArrayList<>(members.keySet());
+    }
+
     public double getCurrentBalance() {
         return currentBalance;
     }
