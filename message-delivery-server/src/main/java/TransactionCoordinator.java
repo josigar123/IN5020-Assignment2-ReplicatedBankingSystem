@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -9,7 +8,7 @@ public class TransactionCoordinator {
 
     private final Group group; // Group to coordinate
 
-    private final AtomicInteger orderCounter = new AtomicInteger(1);;
+    private final AtomicInteger orderCounter = new AtomicInteger(1);
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     public TransactionCoordinator(Group group) {
@@ -27,7 +26,7 @@ public class TransactionCoordinator {
                 boolean ack = future.get(2, TimeUnit.SECONDS);
                 if(ack){
                     System.out.println("ACK from bank after " + attempt + " attempt(s)");
-                    double bankBalance = bank.getBalance(group.getGroupName(), "USD");
+                    Map<String, Double> bankBalance = bank.getBalance();
 
                     if(bankBalance != group.getCurrentBalance()){
                         System.out.println("Setting current balance to " + bankBalance);
