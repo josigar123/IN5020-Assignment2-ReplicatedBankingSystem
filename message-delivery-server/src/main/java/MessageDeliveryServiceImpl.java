@@ -2,11 +2,12 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MessageDeliveryServiceImpl implements MessageDeliveryService{
+public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements MessageDeliveryService{
 
     // A map of coordinators for multiple groups
     private final Map<String, TransactionCoordinator> coordinators;
@@ -15,6 +16,7 @@ public class MessageDeliveryServiceImpl implements MessageDeliveryService{
     private final Registry registry;
 
     public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators) throws RemoteException {
+        super();
         this.coordinators = coordinators;
         registry = LocateRegistry.getRegistry(REGISTRY_IP, REGISTRY_PORT);
     }
