@@ -10,4 +10,5 @@ public interface MessageDeliveryService extends Remote {
     void sendTransactions(String groupName, List<Transaction> transactions) throws RemoteException;
     int getNumberOfMembers(String groupName) throws RemoteException;
     List<String> getMemberNames(String groupName) throws RemoteException;
+    void awaitExecution() throws RemoteException;
 }

@@ -70,6 +70,8 @@ public class BankServer {
                 bankImpl.setInitialBalance(maybeBalance);
             }
 
+            System.out.println("[BANK] Waiting for all banks to join group...");
+            mds.awaitExecution();
             System.out.println("[BANK] Bank server started");
 
             if(scanner != null){

@@ -10,6 +10,7 @@ public class MessageDeliveryServer {
 
     public static void main(String[] args) throws RemoteException {
 
+        int initialNumberOfReplicas = Integer.parseInt(args[0]);
         // Create the group
         Group group = new Group("group3");
         System.out.println("[MDS] Created group");
@@ -27,7 +28,7 @@ public class MessageDeliveryServer {
 
         // Pass the map of coordinators, the MDSImpl, can now coordinate for multiple groups, each with their
         // own coordinator
-        MessageDeliveryServiceImpl service = new MessageDeliveryServiceImpl(coordinators);
+        MessageDeliveryServiceImpl service = new MessageDeliveryServiceImpl(coordinators, initialNumberOfReplicas);
 
         // bind service to registry
         System.out.println("[MDS] Creating service");

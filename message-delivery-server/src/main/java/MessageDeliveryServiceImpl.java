@@ -6,6 +6,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements MessageDeliveryService{
 
@@ -14,11 +15,13 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     private final String REGISTRY_IP = "localhost";
     private final int REGISTRY_PORT = 1099;
     private final Registry registry;
+    private final CountDownLatch latch;
 
-    public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators) throws RemoteException {
+    public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators, int initialNumberOfReplicas) throws RemoteException {
         super();
         this.coordinators = coordinators;
         registry = LocateRegistry.getRegistry(REGISTRY_IP, REGISTRY_PORT);
+        latch = new CountDownLatch(initialNumberOfReplicas);
     }
 
     @Override
@@ -32,7 +35,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
             BankServerInfo bankServerInfo = new BankServerInfo(bank, bankServer);
 
             coordinator.getGroup().join(bankServerInfo);
-
+            latch.countDown();
             return coordinator.getGroup().getCurrentBalance(); // bank sets its balance to this value if present
         }
         catch(NotBoundException e){
@@ -61,5 +64,14 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     @Override
     public List<String> getMemberNames(String groupName) throws RemoteException {
         return coordinators.get(groupName).getGroup().getMembersByNames();
+    }
+
+    @Override
+    public void awaitExecution(){
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
