@@ -10,28 +10,43 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 public class BankServer {
 
     private static final String REGISTRY_IP = "localhost";
     private static final int REGISTRY_PORT = 1099;
 
-      // For 8-10 methods
+    // For 8-10 methods
     private static volatile List<String> CURRENT_MEMBERS = List.of();
     public static void setCurrentMembers(List<String> members) {
         CURRENT_MEMBERS = List.copyOf(members);
     }
 
     public static void main(String[] args) throws RemoteException {
-        if (args.length < 3) {
-            System.err.println("Usage: BankServer <groupName> <bankBindingName> <mdsBindingName>");
-            System.err.println("Example: BankServer group3 bank-R1 message-delivery-service");
+        if (args.length < 5) {
+            System.err.println("Usage: BankServer <bankBindingName> <mdsBindingName> <accountName> <numberOfReplicas> <currencyFileName> [OPTIONAL] <transactionFileName>");
+            System.err.println("Example: BankServer bank-R1 message-delivery-service group3 3 TradingRate.txt [OPTIONAL] transactions.txt");
             System.exit(1);
         }
 
-        String groupName       = args[0]; // e.g. "group3"
-        String bankBindingName = args[1]; // e.g. "bank-R1"
-        String mdsBindingName  = args[2]; // e.g. "message-delivery-service"
+        // Collect all relevant arguments, the must always be present
+        String bankBindingName = args[0]; // e.g. "bank-R1"
+        String mdsBindingName = args[1]; // e.g. "message-delivery-service"
+        String accountName = args[2]; // e.g. "group3"
+        int numberOfReplicas = Integer.parseInt(args[3]); // e.g. 3
+        String currencyFileName = args[4]; // e.g. "path/to/currencies.txt"
+        String transactionFileName = null;
+
+        if (args.length == 6) {
+            transactionFileName = args[5]; // e.g. (optional) "path/to/transactions.txt"
+        }else if (args.length > 6){
+            System.err.println("Illegal number of arguments: " +  args.length);
+            System.exit(2);
+        }
+
+        // Create a scanner, only if a transaction file is not supplied
+        Scanner scanner = transactionFileName == null ? new Scanner(System.in) : null;
 
         // 1) Locate the RMI registry
         Registry registry = LocateRegistry.getRegistry(REGISTRY_IP, REGISTRY_PORT);
@@ -43,12 +58,12 @@ public class BankServer {
             System.out.println("[BANK] Found MDS: " + mdsBindingName);
 
             // 3) Create and bind BankService implementation (before joinGroup)
-            BankServiceImpl bankImpl = new BankServiceImpl(groupName);
+            BankServiceImpl bankImpl = new BankServiceImpl(accountName);
             registry.rebind(bankBindingName, bankImpl);
             System.out.println("[BANK] Bound BankService as: " + bankBindingName);
 
             // 4) Join the group on MDS (MDS will look up this bank stub using bankBindingName)
-            Map<String, Double> maybeBalance = mds.joinGroup(groupName, bankBindingName);
+            Map<String, Double> maybeBalance = mds.joinGroup(accountName, bankBindingName);
 
             if(!maybeBalance.isEmpty()){
                 System.out.println("[BANK] Bank joined group, setting initial balances...");
@@ -57,10 +72,38 @@ public class BankServer {
 
             System.out.println("[BANK] Bank server started");
 
-            // 5) Keep the process alive
-            synchronized (BankServer.class) {
-                try { BankServer.class.wait(); } catch (InterruptedException ignored) {}
+            if(scanner != null){
+                System.out.println("[BANK] Interactive CLI started...");
+                while(true){
+                    System.out.printf("[BANK] (%s) > ", accountName);
+                    String input = scanner.nextLine().trim(); // Parse this line Stavros!
+
+                    if (input.equalsIgnoreCase("exit")) {
+                        exitProcess();
+                        break;
+                    }
+
+                    // TODO: handle parsed transactions and execute parsed method
+                }
+            }else{
+                // In this case we are in batch mode
+                System.out.println("[BANK] Processing transaction batch...");
+                try{
+                    // Read all transactions from supplied file
+                    List<String> transactions = readAllLines(new File(transactionFileName));
+                    // TODO: Parse transaction for execution
+                }
+                catch(IOException e){
+                    e.printStackTrace();
+                    exitProcess();
+                }
+
+                // 5) Keep the process alive
+                synchronized (BankServer.class) {
+                    try { BankServer.class.wait(); } catch (InterruptedException ignored) {}
+                }
             }
+
 
         } catch (NotBoundException e) {
             System.err.println("[BANK] Could not find MDS binding: " + mdsBindingName);
