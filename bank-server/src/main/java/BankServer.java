@@ -6,7 +6,10 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class BankServer {
 
@@ -96,6 +99,8 @@ public class BankServer {
             CurrencyInfo newCurrency = new CurrencyInfo(parts[0], Double.parseDouble(parts[1]));
             retValue.put(parts[0], newCurrency);
         }
+
+        retValue.put("USD", new CurrencyInfo("USD", 1f));
 
         return retValue;
     }
