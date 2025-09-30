@@ -74,26 +74,34 @@ public class BankServer {
             mds.awaitExecution();
             System.out.println("[BANK] Bank server started");
 
+            CommandParser parser = new CommandParser(bankImpl.getRepository());
+
             if(scanner != null){
                 System.out.println("[BANK] Interactive CLI started...");
                 while(true){
                     System.out.printf("[BANK] (%s) > ", accountName);
                     String input = scanner.nextLine().trim(); // Parse this line Stavros!
+                    String result = parser.parseAndExecute(input);
+                    System.out.println(result);
 
                     if (input.equalsIgnoreCase("exit")) {
                         exitProcess();
                         break;
                     }
-
-                    // TODO: handle parsed transactions and execute parsed method
                 }
+                
             }else{
                 // In this case we are in batch mode
                 System.out.println("[BANK] Processing transaction batch...");
                 try{
                     // Read all transactions from supplied file
                     List<String> transactions = readAllLines(new File(transactionFileName));
-                    // TODO: Parse transaction for execution
+                    for (String line : transactions) {
+                        String result = parser.parseAndExecute(line);
+                        System.out.println(result);
+                    }
+
+
                 }
                 catch(IOException e){
                     e.printStackTrace();

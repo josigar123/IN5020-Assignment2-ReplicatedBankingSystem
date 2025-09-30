@@ -8,6 +8,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     private final String groupName;
     private final Map<String, Double> balanceByCurrency = new ConcurrentHashMap<>();
+    private BankRepository repository;
     
 
     public BankServiceImpl(String groupName) throws RemoteException {
@@ -31,10 +32,16 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     }
 
 
-  public void setInitialBalance(Map<String, Double> initialBalance) throws RemoteException {
+    public void setInitialBalance(Map<String, Double> initialBalance) throws RemoteException {
       balanceByCurrency.clear();
       balanceByCurrency.putAll(initialBalance);
     }
+
+    // inside BankServiceImpl.java
+    public BankRepository getRepository() {
+        return this.repository;
+}
+
 }
 
 
