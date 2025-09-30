@@ -37,7 +37,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
       balanceByCurrency.putAll(initialBalance);
     }
 
-    // inside BankServiceImpl.java
+    
     public BankRepository getRepository() {
         return this.repository;
 }
