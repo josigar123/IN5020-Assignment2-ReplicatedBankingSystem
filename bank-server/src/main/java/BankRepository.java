@@ -12,21 +12,12 @@ public class BankRepository{
     private final Map<String, CurrencyInfo> currencies;
     private final List<Transaction> outstandingCollections = new CopyOnWriteArrayList<>();
 
-    private final List<ExecutedEntry> executedList = new CopyOnWriteArrayList<>();
+    private final List<Transaction> executedList = new CopyOnWriteArrayList<>();
     private final AtomicLong orderCounter = new AtomicLong(0);
     private final AtomicLong outstandingCounter = new AtomicLong(0);
 
     private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
     private final String bankBindingName;
-
-     private static final class ExecutedEntry {
-        final long orderNo;
-        final Instant executedAt;
-        final Transaction tx;
-        ExecutedEntry(long orderNo, Instant executedAt, Transaction tx) {
-            this.orderNo = orderNo; this.executedAt = executedAt; this.tx = tx;
-        }
-    }
 
     public BankRepository(String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
          this.bankBindingName = bankBindingName;
@@ -91,11 +82,11 @@ public class BankRepository{
 
         sb.append("executed_list\n");
         for (int i = 0; i < executedList.size(); i++) {
-            ExecutedEntry e = executedList.get(i);
+            Transaction t = executedList.get(i);
             long n = start + i + 1; 
             sb.append(n).append(". ")
-              .append(e.executedAt).append(" ")
-              .append(e.tx.getCommand()).append("\n");
+              .append(t.getCommand()).append(" ")
+              .append(t.getUniqueId()).append("\n");
         }
 
         sb.append("\noutstanding_collection\n");
@@ -107,8 +98,8 @@ public class BankRepository{
 
     // (6) checkTxStatus <unique_id>
     public String checkTxStatus(String uniqueId) {
-        for (ExecutedEntry e : executedList) {
-            if (e.tx.getUniqueId().equals(uniqueId)) return "APPLIED";
+        for (Transaction t : executedList) {
+            if (t.getUniqueId().equals(uniqueId)) return "APPLIED";
         }
         for (Transaction t : outstandingCollections) {
             if (t.getUniqueId().equals(uniqueId)) return "OUTSTANDING";
@@ -124,7 +115,7 @@ public class BankRepository{
     // Helper for when the batch is sent
     public void recordExecuted(Transaction t) {
         long n = orderCounter.incrementAndGet();
-        executedList.add(new ExecutedEntry(n, Instant.now(), t));
+        executedList.add(t);
     }
 
     public void sleep(double seconds) throws InterruptedException {
