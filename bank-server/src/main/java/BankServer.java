@@ -5,8 +5,13 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class BankServer {
+
+    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private static final String REGISTRY_IP = "localhost";
     private static final int REGISTRY_PORT = 1099;
@@ -42,7 +47,7 @@ public class BankServer {
         MessageDeliveryService mds = (MessageDeliveryService) registry.lookup(mdsBindingName);
         System.out.println("[BANK] Found MDS: " + mdsBindingName);
 
-        repository = new BankRepository(mds, currencyFileName);
+        repository = new BankRepository(bankBindingName, mds, currencyFileName);
         System.out.println("[BANK] Created Bank Repository");
 
         BankServiceImpl bankImpl = new BankServiceImpl(accountName, repository);
@@ -59,6 +64,17 @@ public class BankServer {
 
         parser = new CommandParser(repository);
         System.out.println("[BANK] Command parser created");
+
+        // Create a scheduler
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                // Example: send heartbeat to MDS every 10s
+                System.out.println("[BANK] Sending outstanding collection to MDS...");
+                mds.sendTransactions(accountName, repository.getOutstandingTransactions());
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
     public static void main(String[] args) throws RemoteException, NotBoundException {
@@ -83,8 +99,9 @@ public class BankServer {
             try(Scanner sc = new Scanner(System.in)){
                 System.out.printf("[BANK] (%s) > ", accountName);
                 String input = sc.nextLine().trim();
-                String result = parser.parseAndExecute(input);
-                System.out.println(result);
+
+                // Will build the outstanding transactions collection for every read line
+                parser.buildOutstandingTransactions(input);
             }
         }
     }
@@ -95,8 +112,9 @@ public class BankServer {
             // Read all transactions from supplied file
             List<String> transactions = Utils.readAllLines(new File(transactionFileName));
             for (String line : transactions) {
-                String result = parser.parseAndExecute(line);
-                System.out.println(result);
+
+                // Will build the outstanding transactions collection for every read line
+                parser.buildOutstandingTransactions(line);
             }
         }
         catch(IOException e){
