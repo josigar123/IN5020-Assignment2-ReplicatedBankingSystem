@@ -31,8 +31,8 @@ public class BankServer {
     TODO:
         2. Refaktorer parser til å kalle alle metodene i BankRepository OK
         14. CommandParser må legge til transaksjoner i outstanding_collections OK
-        15. Etter du har sent Outstanding_collections og fått view fra mds, må commandparser kjøre kommandoene
-     */
+        15. Etter du har sent Outstanding_collections og fått view fra mds, må commandparser kjøre kommandoene OK
+    */
 
     public BankServer(BankConfig config) throws RemoteException, NotBoundException {
         bankBindingName = config.bankBindingName(); // e.g. "bank-R1"
@@ -69,9 +69,9 @@ public class BankServer {
         // Create a scheduler
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                // Example: send heartbeat to MDS every 10s
                 System.out.println("[BANK] Sending outstanding collection to MDS...");
                 mds.sendTransactions(accountName, repository.getOutstandingTransactions());
+                repository.setSelfTransactions(repository.getOutstandingTransactions().size());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
