@@ -20,7 +20,7 @@ public class CommandParser {
         try {
             switch (cmd) {
                 case "memberinfo":
-                    return BankServer.memberInfo();
+                    return repository.memberInfo();
 
                 case "getquickbalance":
                     if (tokens.length < 2) return "[ERROR] Usage: getQuickBalance <currency>";
@@ -67,10 +67,10 @@ public class CommandParser {
                 case "sleep":
                     if (tokens.length < 2) return "[ERROR] Usage: sleep <seconds>";
                     double seconds = Double.parseDouble(tokens[1]);
-                    return BankServer.sleepSeconds(seconds);
+                    return repository.sleep(seconds);
 
                 case "exit":
-                    BankServer.exitProcess();
+                    repository.exit();
                     return "Exiting...";
 
                 default:
