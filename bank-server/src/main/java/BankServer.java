@@ -7,6 +7,7 @@ import java.rmi.registry.Registry;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class BankServer {
@@ -28,8 +29,8 @@ public class BankServer {
 
    /*
     TODO:
-        2. Refaktorer parser til å kalle alle metodene i BankRepository
-        14. CommandParser må legge til transaksjoner i outstanding_collections
+        2. Refaktorer parser til å kalle alle metodene i BankRepository OK
+        14. CommandParser må legge til transaksjoner i outstanding_collections OK
         15. Etter du har sent Outstanding_collections og fått view fra mds, må commandparser kjøre kommandoene
      */
 
@@ -112,15 +113,16 @@ public class BankServer {
             // Read all transactions from supplied file
             List<String> transactions = Utils.readAllLines(new File(transactionFileName));
             for (String line : transactions) {
-
+                Thread.sleep(ThreadLocalRandom.current().nextLong(500, 1501));
                 // Will build the outstanding transactions collection for every read line
                 parser.buildOutstandingTransactions(line);
             }
         }
         catch(IOException e){
             e.printStackTrace();
-        }
-        finally {
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
             repository.exit();
         }
     }
