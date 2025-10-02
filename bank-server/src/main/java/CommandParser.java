@@ -1,4 +1,3 @@
-import java.util.List;
 import java.util.UUID;
 
 public class CommandParser {
@@ -9,13 +8,25 @@ public class CommandParser {
         this.repository = repository;
     }
 
-    public String parseAndExecute(String input) {
-        if (input == null || input.isBlank()) {
-            return "[ERROR] Empty command";
+    public String[] parseTransactionFromLine(String line){
+        if (line == null || line.isBlank()) {
+            System.out.println("[ERROR] Empty command");
+            return null;
         }
 
-        String[] tokens = input.trim().split("\\s+");
-        String cmd = tokens[0].toLowerCase();
+        return line.trim().split("\\s+");
+    }
+
+    public void buildOutstandingTransactions(String command){
+        String uniqueId = repository.getBankBindingName() + repository.getOutstandingCount();
+        Transaction tx = new Transaction(command, uniqueId);
+        repository.addOutStandingTransaction(tx);
+    }
+
+    public String executeTransaction(String input) {
+
+        String[] tokens = parseTransactionFromLine(input);
+        String cmd = tokens[0];
 
         try {
             switch (cmd) {
@@ -43,7 +54,7 @@ public class CommandParser {
                     return "Deposited " + depositAmount + " " + depositCurrency;
 
                 case "addinterest":
-                    if (tokens.length < 3 && tokens.length < 2) 
+                    if (tokens.length < 2)
                         return "[ERROR] Usage: addInterest <currency> <percent>";
                     String interestCurrency = tokens[1];
                     double percent = Double.parseDouble(tokens[2]);
@@ -62,16 +73,17 @@ public class CommandParser {
 
                 case "cleanhistory":
                     repository.cleanHistory();
-                    return "History cleared";
+                    break;
 
                 case "sleep":
                     if (tokens.length < 2) return "[ERROR] Usage: sleep <seconds>";
                     double seconds = Double.parseDouble(tokens[1]);
-                    return repository.sleep(seconds);
+                    repository.sleep(seconds);
+                    break;
 
                 case "exit":
                     repository.exit();
-                    return "Exiting...";
+                    break;
 
                 default:
                     return "[ERROR] Unknown command: " + cmd;
