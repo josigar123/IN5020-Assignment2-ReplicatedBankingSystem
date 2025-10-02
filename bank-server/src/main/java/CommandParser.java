@@ -1,5 +1,3 @@
-import java.util.UUID;
-
 public class CommandParser {
 
     private final BankRepository repository;
@@ -18,11 +16,13 @@ public class CommandParser {
     }
 
     public void buildOutstandingTransactions(String command){
-        String uniqueId = repository.getBankBindingName() + repository.getOutstandingCount();
+        String uniqueId = repository.getBankBindingName()+ ":" + repository.getOutstandingCount();
         Transaction tx = new Transaction(command, uniqueId);
-        repository.addOutStandingTransaction(tx);
+        repository.addOutstandingTransaction(tx);
     }
 
+    // TODO: Fix this
+    //       Make correct mutations to executed list and outstanding list as well as counter variables
     public String executeTransaction(String input) {
 
         String[] tokens = parseTransactionFromLine(input);
@@ -47,10 +47,7 @@ public class CommandParser {
                     if (tokens.length < 3) return "[ERROR] Usage: deposit <currency> <amount>";
                     String depositCurrency = tokens[1];
                     double depositAmount = Double.parseDouble(tokens[2]);
-                    Transaction depositTx = new Transaction(UUID.randomUUID().toString(),
-                                                            input); // store command string
                     repository.deposit(depositCurrency, depositAmount);
-                    repository.recordExecuted(depositTx);
                     return "Deposited " + depositAmount + " " + depositCurrency;
 
                 case "addinterest":
@@ -58,10 +55,7 @@ public class CommandParser {
                         return "[ERROR] Usage: addInterest <currency> <percent>";
                     String interestCurrency = tokens[1];
                     double percent = Double.parseDouble(tokens[2]);
-                    Transaction interestTx = new Transaction(UUID.randomUUID().toString(),
-                                                             input);
                     repository.addInterest(interestCurrency, percent);
-                    repository.recordExecuted(interestTx);
                     return "Added interest " + percent + "% to " + interestCurrency;
 
                 case "checktxstatus":
