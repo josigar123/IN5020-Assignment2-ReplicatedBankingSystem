@@ -1,7 +1,8 @@
-import java.util.Collection;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.rmi.RemoteException;
+import java.util.*;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -14,6 +15,7 @@ public class BankRepository{
     //For history and metods 5-7
     private final List<ExecutedEntry> executedList = new CopyOnWriteArrayList<>();
     private final AtomicLong orderCounter = new AtomicLong(0);
+    private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
 
      private static final class ExecutedEntry {
         final long orderNo;
@@ -24,10 +26,10 @@ public class BankRepository{
         }
     }
 
-
-    public BankRepository(Map<String, CurrencyInfo> currencies, Collection<Transaction> outstanding_collections){
-        this.currencies = currencies;
-        this.outstanding_collections = outstanding_collections;
+    public BankRepository(MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
+        this.currencies = initializeCurrency(pathToCurrencyFile);
+        this.outstanding_collections = new ArrayList<>();
+        this.messageDeliveryService = messageDeliveryService;
     }
 
     public void getQuickBalance(String currency) {
@@ -76,6 +78,10 @@ public class BankRepository{
         }
     }
 
+    public List<String> memberInfo(String groupName) throws RemoteException{
+        return messageDeliveryService.getMemberNames(groupName);
+    }
+
      // (5) getHistory
     public String getHistory() {
         StringBuilder sb = new StringBuilder();
@@ -119,5 +125,35 @@ public class BankRepository{
         executedList.add(new ExecutedEntry(n, Instant.now(), t));
     }
 
+    public void sleep(double seconds) throws InterruptedException {
+        long ms = Math.round(seconds * 1000.0);
+        try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+    }
 
+    public void exit(){
+        System.out.println("[BANK] Exiting...");
+        System.exit(0);
+    }
+
+    private Map<String, CurrencyInfo> initializeCurrency(String pathToRateFile){
+        List<String> lines;
+        try {
+            lines = Utils.readAllLines(new File(pathToRateFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        Map<String,CurrencyInfo> retValue = new HashMap<>();
+
+        for(String line: lines){
+            String[] parts = line.split("\\s+");
+            CurrencyInfo newCurrency = new CurrencyInfo(parts[0], Double.parseDouble(parts[1]));
+            retValue.put(parts[0], newCurrency);
+        }
+
+        retValue.put("USD", new CurrencyInfo("USD", 1f));
+
+        return retValue;
+    }
 }
