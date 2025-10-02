@@ -2,7 +2,6 @@ import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.*;
-import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -18,6 +17,8 @@ public class BankRepository{
 
     private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
     private final String bankBindingName;
+
+    private int selfTransactions;
 
     public BankRepository(String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
          this.bankBindingName = bankBindingName;
@@ -166,5 +167,17 @@ public class BankRepository{
 
     public List<Transaction> getOutstandingTransactions() {
          return this.outstandingCollections;
+    }
+
+    public void setSelfTransactions(int selfTransactions) {
+        this.selfTransactions = selfTransactions;
+    }
+
+    public int getSelfTransactions() {
+        return selfTransactions;
+    }
+
+    public List<Transaction> getExecutedTransactions() {
+        return executedList;
     }
 }
