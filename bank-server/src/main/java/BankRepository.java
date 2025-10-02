@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BankRepository{
 
     private final Map<String, CurrencyInfo> currencies;
-    private final List<Transaction> outstandingCollections;
+    private final List<Transaction> outstandingCollections = new CopyOnWriteArrayList<>();
 
     private final List<ExecutedEntry> executedList = new CopyOnWriteArrayList<>();
     private final AtomicLong orderCounter = new AtomicLong(0);
@@ -31,7 +31,6 @@ public class BankRepository{
     public BankRepository(String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
          this.bankBindingName = bankBindingName;
         this.currencies = initializeCurrency(pathToCurrencyFile);
-        this.outstandingCollections = new ArrayList<>();
         this.messageDeliveryService = messageDeliveryService;
     }
 
