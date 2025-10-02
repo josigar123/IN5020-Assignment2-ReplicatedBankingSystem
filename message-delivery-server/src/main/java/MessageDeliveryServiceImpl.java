@@ -52,7 +52,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
 
     @Override
     public void sendTransactions(String groupName, List<Transaction> transactions) throws RemoteException {
-        List<OrderedTransaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
+        List<Transaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
         coordinators.get(groupName).broadCastTransactions(orderedTransactions);
     }
 

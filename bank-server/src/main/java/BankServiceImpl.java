@@ -16,7 +16,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     }
 
     @Override
-    public boolean deliverOrderedBatch(List<OrderedTransaction> orderedTransactions) throws RemoteException {
+    public boolean deliverOrderedBatch(List<Transaction> orderedTransactions) throws RemoteException {
         throw  new UnsupportedOperationException("Not supported yet.");
     }
 

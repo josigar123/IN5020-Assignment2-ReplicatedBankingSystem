@@ -5,7 +5,7 @@ import java.util.Map;
 
 // RMI method interface for banking replication consistency
 public interface BankService extends Remote {
-    boolean deliverOrderedBatch(List<OrderedTransaction> orderedTransactions) throws RemoteException;
+    boolean deliverOrderedBatch(List<Transaction> orderedTransactions) throws RemoteException;
     void onMembershipChange(String groupName, List<String> currentReplicaIds) throws RemoteException;
     Map<String, Double> getBalance() throws RemoteException;
 

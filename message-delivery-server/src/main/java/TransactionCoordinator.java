@@ -10,12 +10,13 @@ public class TransactionCoordinator {
 
     private final AtomicInteger orderCounter = new AtomicInteger(1);
     private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final List<Transaction> transactionView = new CopyOnWriteArrayList<>();
 
     public TransactionCoordinator(Group group) {
         this.group = group;
     }
 
-    private boolean sendWithRetry(BankService bank, List<OrderedTransaction> batch) {
+    private boolean sendWithRetry(BankService bank, List<Transaction> batch) {
         long start = System.currentTimeMillis();
         int attempt = 0;
 
@@ -55,7 +56,7 @@ public class TransactionCoordinator {
     }
 
     // Method must broadcast received transactions to all group members
-    public void broadCastTransactions(List<OrderedTransaction> orderedTransactions) {
+    public void broadCastTransactions(List<Transaction> orderedTransactions) {
 
         for(BankServerInfo bankServerInfo : group.getMembers()){
 
@@ -70,12 +71,11 @@ public class TransactionCoordinator {
         }
     }
 
-    public List<OrderedTransaction> setTransactionOrder(List<Transaction> transactions) {
-        List<OrderedTransaction> orderedBatch = new ArrayList<>();
-        for (Transaction transaction : transactions) {
-            orderedBatch.add(new OrderedTransaction(orderCounter.getAndIncrement(), transaction));
-        }
-        return orderedBatch;
+    public List<Transaction> setTransactionOrder(List<Transaction> transactions) {
+        // Add all transactions to order,
+        // Order will be implicit by iterating incrementally over the list
+        transactionView.addAll(transactions);
+        return transactionView; // Return the complete view after appending the transactions
     }
 
     public Group getGroup() {
