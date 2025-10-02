@@ -22,8 +22,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     @Override
     public void onMembershipChange(String group, List<String> currentReplicaIds) throws RemoteException {
-        if (!this.groupName.equals(group)) return;
-        BankServer.setCurrentMembers(currentReplicaIds);
+        throw  new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
