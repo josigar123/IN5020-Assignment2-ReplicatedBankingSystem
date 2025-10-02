@@ -17,7 +17,13 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     @Override
     public boolean deliverOrderedBatch(List<Transaction> orderedTransactions) throws RemoteException {
-        throw  new UnsupportedOperationException("Not supported yet.");
+
+        // Add the received view from the MDS
+        for(Transaction transaction : orderedTransactions){
+            repository.addOutstandingTransaction(transaction);
+        }
+
+        return true;
     }
 
     @Override

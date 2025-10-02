@@ -128,7 +128,7 @@ public class BankRepository{
         System.exit(0);
     }
 
-    public void addOutStandingTransaction(Transaction transaction){
+    public void addOutstandingTransaction(Transaction transaction){
         outstandingCollections.add(transaction);
         outstandingCounter.incrementAndGet();
     }
