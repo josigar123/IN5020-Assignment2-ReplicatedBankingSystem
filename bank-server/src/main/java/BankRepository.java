@@ -10,12 +10,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BankRepository{
 
     private final Map<String, CurrencyInfo> currencies;
-    private final Collection<Transaction> outstanding_collections;
+    private final List<Transaction> outstandingCollections;
 
-    //For history and metods 5-7
     private final List<ExecutedEntry> executedList = new CopyOnWriteArrayList<>();
     private final AtomicLong orderCounter = new AtomicLong(0);
+    private final AtomicLong outstandingCounter = new AtomicLong(0);
+
     private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
+    private final String bankBindingName;
 
      private static final class ExecutedEntry {
         final long orderNo;
@@ -26,9 +28,10 @@ public class BankRepository{
         }
     }
 
-    public BankRepository(MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
+    public BankRepository(String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
+         this.bankBindingName = bankBindingName;
         this.currencies = initializeCurrency(pathToCurrencyFile);
-        this.outstanding_collections = new ArrayList<>();
+        this.outstandingCollections = new ArrayList<>();
         this.messageDeliveryService = messageDeliveryService;
     }
 
@@ -55,11 +58,11 @@ public class BankRepository{
 
     public void getSyncedBalanceNaive(String currency) {
         Thread t = new Thread(() -> {
-            synchronized (outstanding_collections) {
+            synchronized (outstandingCollections) {
                 try 
                 {
-                    while (!outstanding_collections.isEmpty()) {
-                        outstanding_collections.wait();
+                    while (!outstandingCollections.isEmpty()) {
+                        outstandingCollections.wait();
                     }
                     
                     getQuickBalance(currency);
@@ -73,8 +76,8 @@ public class BankRepository{
     }
 
     public void notifyGetSyncedBalance() {
-        synchronized (outstanding_collections) {
-            outstanding_collections.notifyAll();
+        synchronized (outstandingCollections) {
+            outstandingCollections.notifyAll();
         }
     }
 
@@ -97,7 +100,7 @@ public class BankRepository{
         }
 
         sb.append("\noutstanding_collection\n");
-        for (Transaction t : outstanding_collections) {
+        for (Transaction t : outstandingCollections) {
             sb.append(t.getCommand()).append("\n");
         }
         return sb.toString();
@@ -108,7 +111,7 @@ public class BankRepository{
         for (ExecutedEntry e : executedList) {
             if (e.tx.getUniqueId().equals(uniqueId)) return "APPLIED";
         }
-        for (Transaction t : outstanding_collections) {
+        for (Transaction t : outstandingCollections) {
             if (t.getUniqueId().equals(uniqueId)) return "OUTSTANDING";
         }
         return "UNKNOWN";
@@ -135,6 +138,12 @@ public class BankRepository{
         System.exit(0);
     }
 
+    public void addOutStandingTransaction(Transaction transaction){
+        outstandingCollections.add(transaction);
+        outstandingCounter.incrementAndGet();
+    }
+
+
     private Map<String, CurrencyInfo> initializeCurrency(String pathToRateFile){
         List<String> lines;
         try {
@@ -155,5 +164,17 @@ public class BankRepository{
         retValue.put("USD", new CurrencyInfo("USD", 1f));
 
         return retValue;
+    }
+
+    public String getBankBindingName() {
+         return bankBindingName;
+    }
+
+    public AtomicLong getOutstandingCount() {
+         return outstandingCounter;
+    }
+
+    public List<Transaction> getOutstandingTransactions() {
+         return this.outstandingCollections;
     }
 }
