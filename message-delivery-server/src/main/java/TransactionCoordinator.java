@@ -97,7 +97,7 @@ public class TransactionCoordinator {
             
             for(Transaction viewTx: transactionView){
 
-                if(tx.command().equals(viewTx.command())){
+                if(tx.uniqueId().equals(viewTx.uniqueId())){
                     alreadyIn = true;
                     break;
                 }
