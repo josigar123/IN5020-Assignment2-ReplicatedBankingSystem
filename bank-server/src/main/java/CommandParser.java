@@ -24,28 +24,37 @@ public class CommandParser {
     // TODO: Fix this
     //       Make correct mutations to executed list and outstanding list as well as counter variables
     public void executeTransaction(String input) {
-
+        System.out.println("PARSING: " + input);
         String[] tokens = parseTransactionFromLine(input);
         String cmd = tokens[0];
 
         try {
-            switch (cmd) {
+            switch (cmd.toLowerCase()) {
                 case "memberinfo":
                     repository.memberInfo(repository.getAccountName());
                     break;
 
                 case "getquickbalance":
-                    if (tokens.length < 2) System.out.println("[ERROR] Usage: getQuickBalance <currency>");
+                    if (tokens.length < 2) {
+                        System.out.println("[ERROR] Usage: getQuickBalance <currency>");
+                        break;
+                    }
                     repository.getQuickBalance(tokens[1]);
                     break;
 
                 case "getsyncedbalance":
-                    if (tokens.length < 2) System.out.println("[ERROR] Usage: getSyncedBalance <currency>");
+                    if (tokens.length < 2) {
+                        System.out.println("[ERROR] Usage: getSyncedBalance <currency>");
+                        break;
+                    }
                     repository.getSyncedBalanceNaive(tokens[1]);
                     break;
 
                 case "deposit":
-                    if (tokens.length < 3)  System.out.println("[ERROR] Usage: deposit <currency> <amount>");
+                    if (tokens.length < 3) {
+                        System.out.println("[ERROR] Usage: deposit <currency> <amount>");
+                        break;
+                    }
                     String depositCurrency = tokens[1];
                     double depositAmount = Double.parseDouble(tokens[2]);
                     repository.deposit(depositCurrency, depositAmount);
@@ -53,8 +62,10 @@ public class CommandParser {
                     break;
 
                 case "addinterest":
-                    if (tokens.length < 2)
+                    if (tokens.length < 3) {
                         System.out.println("[ERROR] Usage: addInterest <currency> <percent>");
+                        break;
+                    }
                     String interestCurrency = tokens[1];
                     double percent = Double.parseDouble(tokens[2]);
                     repository.addInterest(interestCurrency, percent);
@@ -62,7 +73,10 @@ public class CommandParser {
                     break;
 
                 case "checktxstatus":
-                    if (tokens.length < 2) System.out.println("[ERROR] Usage: checkTxStatus <id>");
+                    if (tokens.length < 2) {
+                        System.out.println("[ERROR] Usage: checkTxStatus <id>");
+                        break;
+                    }
                     repository.checkTxStatus(tokens[1]);
                     break;
 
@@ -75,7 +89,11 @@ public class CommandParser {
                     break;
 
                 case "sleep":
-                    if (tokens.length < 2) System.out.println("[ERROR] Usage: sleep <seconds>");
+                    if (tokens.length < 2) {
+                        System.out.println("[ERROR] Usage: sleep <seconds>");
+                        break;
+                    }
+
                     double seconds = Double.parseDouble(tokens[1]);
                     repository.sleep(seconds);
                     break;
