@@ -100,14 +100,13 @@ public class BankServer {
 
     public void launchInteractiveCli(){
         System.out.println("[BANK] Interactive CLI started...");
+        Scanner sc = new Scanner(System.in); // one Scanner for all input
         while(true){
-            try(Scanner sc = new Scanner(System.in)){
-                System.out.printf("[BANK] (%s) > ", accountName);
-                String input = sc.nextLine().trim();
-
-                // Will build the outstanding transactions collection for every read line
-                parser.buildOutstandingTransactions(input);
-            }
+            System.out.printf("[BANK] (%s) > ", accountName);
+            if (!sc.hasNextLine()) break; // gracefully exit if input ends
+            String input = sc.nextLine().trim();
+            System.out.println("READ LINE: " + input);
+            parser.buildOutstandingTransactions(input);
         }
     }
 
