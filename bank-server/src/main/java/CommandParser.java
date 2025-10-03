@@ -23,7 +23,7 @@ public class CommandParser {
 
     // TODO: Fix this
     //       Make correct mutations to executed list and outstanding list as well as counter variables
-    public String executeTransaction(String input) {
+    public void executeTransaction(String input) {
 
         String[] tokens = parseTransactionFromLine(input);
         String cmd = tokens[0];
@@ -31,46 +31,51 @@ public class CommandParser {
         try {
             switch (cmd) {
                 case "memberinfo":
-                    return repository.memberInfo();
+                    repository.memberInfo(repository.getAccountName());
+                    break;
 
                 case "getquickbalance":
-                    if (tokens.length < 2) return "[ERROR] Usage: getQuickBalance <currency>";
+                    if (tokens.length < 2) System.out.println("[ERROR] Usage: getQuickBalance <currency>");
                     repository.getQuickBalance(tokens[1]);
-                    return "OK";
+                    break;
 
                 case "getsyncedbalance":
-                    if (tokens.length < 2) return "[ERROR] Usage: getSyncedBalance <currency>";
+                    if (tokens.length < 2) System.out.println("[ERROR] Usage: getSyncedBalance <currency>");
                     repository.getSyncedBalanceNaive(tokens[1]);
-                    return "OK";
+                    break;
 
                 case "deposit":
-                    if (tokens.length < 3) return "[ERROR] Usage: deposit <currency> <amount>";
+                    if (tokens.length < 3)  System.out.println("[ERROR] Usage: deposit <currency> <amount>");
                     String depositCurrency = tokens[1];
                     double depositAmount = Double.parseDouble(tokens[2]);
                     repository.deposit(depositCurrency, depositAmount);
-                    return "Deposited " + depositAmount + " " + depositCurrency;
+                    System.out.println("Deposited " + depositAmount + " " + depositCurrency);
+                    break;
 
                 case "addinterest":
                     if (tokens.length < 2)
-                        return "[ERROR] Usage: addInterest <currency> <percent>";
+                        System.out.println("[ERROR] Usage: addInterest <currency> <percent>");
                     String interestCurrency = tokens[1];
                     double percent = Double.parseDouble(tokens[2]);
                     repository.addInterest(interestCurrency, percent);
-                    return "Added interest " + percent + "% to " + interestCurrency;
+                    System.out.println("Added interest " + percent + "% to " + interestCurrency);
+                    break;
 
                 case "checktxstatus":
-                    if (tokens.length < 2) return "[ERROR] Usage: checkTxStatus <id>";
-                    return repository.checkTxStatus(tokens[1]);
+                    if (tokens.length < 2) System.out.println("[ERROR] Usage: checkTxStatus <id>");
+                    repository.checkTxStatus(tokens[1]);
+                    break;
 
                 case "gethistory":
-                    return repository.getHistory();
+                    repository.getHistory();
+                    break;
 
                 case "cleanhistory":
                     repository.cleanHistory();
                     break;
 
                 case "sleep":
-                    if (tokens.length < 2) return "[ERROR] Usage: sleep <seconds>";
+                    if (tokens.length < 2) System.out.println("[ERROR] Usage: sleep <seconds>");
                     double seconds = Double.parseDouble(tokens[1]);
                     repository.sleep(seconds);
                     break;
@@ -80,11 +85,12 @@ public class CommandParser {
                     break;
 
                 default:
-                    return "[ERROR] Unknown command: " + cmd;
+                    System.out.println("[ERROR] Unknown command: " + cmd);
+                    break;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return "[ERROR] Exception: " + e.getMessage();
+            System.out.println("[ERROR] Exception: " + e.getMessage());
         }
     }
 }
