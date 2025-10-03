@@ -4,7 +4,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.*;
+import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -51,12 +52,15 @@ public class BankServer {
         repository = new BankRepository(bankBindingName, mds, currencyFileName);
         System.out.println("[BANK] Created Bank Repository");
 
-        BankServiceImpl bankImpl = new BankServiceImpl(accountName, repository);
+        BankServiceImpl bankImpl = new BankServiceImpl(repository);
         registry.rebind(bankBindingName, bankImpl);
         System.out.println("[BANK] Bound BankService as: " + bankBindingName);
 
         // Returns a maybeBalance, needs refactor
-        mds.joinGroup(accountName, bankBindingName);
+        Pair snapshot = mds.joinGroup(accountName, bankBindingName);
+        if(snapshot != null){
+            repository.setState(snapshot);
+        }
         System.out.printf("[BANK] Joined group %s", accountName);
 
         System.out.println("[BANK] Waiting for all banks to join group...");

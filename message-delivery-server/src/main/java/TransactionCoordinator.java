@@ -1,16 +1,22 @@
-import java.util.ArrayList;
+import java.rmi.RemoteException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransactionCoordinator {
 
     private final Group group; // Group to coordinate
 
-    private final AtomicInteger orderCounter = new AtomicInteger(1);
+    private final AtomicInteger orderCounter = new AtomicInteger(0);
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final List<Transaction> transactionView = new CopyOnWriteArrayList<>();
+    private Pair snapshot = null;
 
     public TransactionCoordinator(Group group) {
         this.group = group;
@@ -27,13 +33,7 @@ public class TransactionCoordinator {
                 boolean ack = future.get(2, TimeUnit.SECONDS);
                 if(ack){
                     System.out.println("ACK from bank after " + attempt + " attempt(s)");
-                    Map<String, Double> bankBalance = bank.getBalance();
-
-                    if(bankBalance != group.getCurrentBalance()){
-                        System.out.println("Setting current balance to " + bankBalance);
-                        group.setCurrentBalance(bankBalance);
-                    }
-
+                    snapshot = bank.getBalance();
                     return true;
                 }
             }catch(TimeoutException e){
@@ -56,25 +56,57 @@ public class TransactionCoordinator {
     }
 
     // Method must broadcast received transactions to all group members
-    public void broadCastTransactions(List<Transaction> orderedTransactions) {
+    public void broadCastTransactions(List<Transaction> orderedTransactions)  {
+        int membersCount = group.getMembers().size();
+        CountDownLatch latch = new CountDownLatch(membersCount);
 
-        for(BankServerInfo bankServerInfo : group.getMembers()){
-
+        for (BankServerInfo bankServerInfo : group.getMembers()) {
             BankService bank = bankServerInfo.getBank();
-
             executor.submit(() -> {
-                boolean success = sendWithRetry(bank, orderedTransactions);
-                if(!success){
-                    evictFailedServer(bankServerInfo.getName());
+                try {
+                    boolean success = sendWithRetry(bank, orderedTransactions);
+                    if (!success) {
+                        evictFailedServer(bankServerInfo.getName());
+                    } else {
+                        Pair tempSnapshot = bank.getBalance();
+                        if (tempSnapshot != null && !tempSnapshot.equals(snapshot)) {
+                            snapshot = tempSnapshot;
+                        }
+                    }
+                }catch(RemoteException e){
+                    e.printStackTrace();
+                } 
+                finally {
+                    // Always count down, even if exceptions occur
+                    latch.countDown();
                 }
             });
+        }
+        try {
+            latch.await();    
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     public List<Transaction> setTransactionOrder(List<Transaction> transactions) {
-        // Add all transactions to order,
-        // Order will be implicit by iterating incrementally over the list
-        transactionView.addAll(transactions);
+        
+        for(Transaction tx: transactions){
+            
+            boolean alreadyIn = false;
+            
+            for(Transaction viewTx: transactionView){
+
+                if(tx.command().equals(viewTx.command())){
+                    alreadyIn = true;
+                    break;
+                }
+            }
+            if(alreadyIn){
+                continue;
+            }
+            transactionView.addLast(tx);
+        }
         return transactionView; // Return the complete view after appending the transactions
     }
 

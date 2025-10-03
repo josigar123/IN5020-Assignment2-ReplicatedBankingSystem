@@ -1,4 +1,7 @@
-public class CurrencyInfo{
+
+import java.io.Serializable;
+
+public class CurrencyInfo implements Serializable{
     private final String currencyName;
     private final double rateToDollar;
     private double accountValue;

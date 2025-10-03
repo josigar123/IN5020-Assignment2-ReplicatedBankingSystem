@@ -1,13 +1,13 @@
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Group {
 
-    private String groupName;
-    private Map<String, BankServerInfo> members = new ConcurrentHashMap<>();
-    private Map<String, Double> currencyBalances = new ConcurrentHashMap<>();
+    private final String groupName;
+    private final Map<String, BankServerInfo> members = new ConcurrentHashMap<>();
+    private Pair snapshot;
 
     public Group(String groupName){
         this.groupName = groupName;
@@ -29,12 +29,12 @@ public class Group {
         return new ArrayList<>(members.keySet());
     }
 
-    public Map<String, Double> getCurrentBalance() {
-        return Map.copyOf(currencyBalances);
+    public Pair getCurrentBalance() {
+        return snapshot;
     }
 
-    public void setCurrentBalance(Map<String, Double> currencyBalances) {
-        this.currencyBalances = new ConcurrentHashMap<>(currencyBalances);
+    public void setCurrentBalance(Pair snapshot) {
+        this.snapshot = snapshot;
     }
 
     public String getGroupName() {

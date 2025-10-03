@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements MessageDeliveryService{
 
@@ -16,6 +17,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     private final int REGISTRY_PORT = 1099;
     private final Registry registry;
     private final CountDownLatch latch;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators, int initialNumberOfReplicas) throws RemoteException {
         super();
@@ -25,7 +27,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     }
 
     @Override
-    public Map<String, Double> joinGroup(String groupName, String bankServer) throws RemoteException {
+    public Pair joinGroup(String groupName, String bankServer) throws RemoteException {
 
         try{
             // Get the coordinator for the group
@@ -52,8 +54,15 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
 
     @Override
     public void sendTransactions(String groupName, List<Transaction> transactions) throws RemoteException {
-        List<Transaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
-        coordinators.get(groupName).broadCastTransactions(orderedTransactions);
+        
+        lock.lock();
+        try{
+            List<Transaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
+            coordinators.get(groupName).broadCastTransactions(orderedTransactions);
+            
+        }finally{
+            lock.unlock();
+        }
     }
 
     @Override

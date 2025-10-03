@@ -1,18 +1,20 @@
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 
 public class BankRepository{
 
-    private final Map<String, CurrencyInfo> currencies;
+    private Map<String, CurrencyInfo> currencies;
     private final List<Transaction> outstandingCollections = new CopyOnWriteArrayList<>();
 
     private final List<Transaction> executedList = new CopyOnWriteArrayList<>();
-    private final AtomicLong orderCounter = new AtomicLong(0);
+    private AtomicLong orderCounter = new AtomicLong(0);
     private final AtomicLong outstandingCounter = new AtomicLong(0);
 
     private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
@@ -21,7 +23,7 @@ public class BankRepository{
     private int selfTransactions;
 
     public BankRepository(String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
-         this.bankBindingName = bankBindingName;
+        this.bankBindingName = bankBindingName;
         this.currencies = initializeCurrency(pathToCurrencyFile);
         this.messageDeliveryService = messageDeliveryService;
     }
@@ -113,12 +115,6 @@ public class BankRepository{
         executedList.clear();
     }
 
-    // Helper for when the batch is sent
-    public void recordExecuted(Transaction t) {
-        long n = orderCounter.incrementAndGet();
-        executedList.add(t);
-    }
-
     public void sleep(double seconds) throws InterruptedException {
         long ms = Math.round(seconds * 1000.0);
         try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
@@ -135,6 +131,7 @@ public class BankRepository{
     }
 
 
+    @SuppressWarnings("CallToPrintStackTrace")
     private Map<String, CurrencyInfo> initializeCurrency(String pathToRateFile){
         List<String> lines;
         try {
@@ -179,5 +176,18 @@ public class BankRepository{
 
     public List<Transaction> getExecutedTransactions() {
         return executedList;
+    }
+
+    public AtomicLong getOrderCounter(){
+        return orderCounter;
+    }
+
+    public Map<String, CurrencyInfo> getCurrencies(){
+        return currencies;
+    }
+
+    public void setState(Pair snapshot){
+        this.orderCounter = new AtomicLong(snapshot.getOrderCounter());
+        this.currencies = snapshot.getCurrencies();
     }
 }
