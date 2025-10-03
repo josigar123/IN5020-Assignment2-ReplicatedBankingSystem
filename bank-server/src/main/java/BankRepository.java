@@ -1,5 +1,7 @@
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +44,29 @@ public class BankRepository{
         }
 
         System.out.println("Balance for " + currency + " is " + totalBalance);
+        log("Balance for " + currency + " is " + totalBalance);
     }
+
+    private void log(String message) {
+        System.out.println(message); // console output
+
+        // Directory to store logs
+        String dir = "results";
+        File directory = new File(dir);
+        if (!directory.exists()) {
+            directory.mkdirs(); // create directory if it doesn't exist
+        }
+
+        // File path
+        String fileName = dir + "/" + bankBindingName + "Results.txt";
+
+        try (PrintWriter out = new PrintWriter(new FileWriter(fileName, true))) { // append mode
+            out.println(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     
     public void deposit(String currency, double amount) {
         currencies.get(currency).add(amount);
@@ -126,6 +150,7 @@ public class BankRepository{
 
     public void exit(){
         System.out.println("[BANK] Exiting...");
+        getQuickBalance("USD");
         System.exit(0);
     }
 
