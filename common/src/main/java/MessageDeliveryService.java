@@ -4,7 +4,7 @@ import java.util.List;
 
 // RMI methods for interacting with the MDS
 public interface MessageDeliveryService extends Remote {
-    Pair joinGroup(String groupName, String bankServer) throws RemoteException;
+    Pair joinGroup(String groupName, String bankServer, int numberOfReplicas) throws RemoteException;
     void leaveGroup(String groupName, String bankServer) throws RemoteException;
     void sendTransactions(String groupName, List<Transaction> transactions) throws RemoteException;
     int getNumberOfMembers(String groupName) throws RemoteException;

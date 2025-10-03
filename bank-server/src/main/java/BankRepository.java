@@ -13,6 +13,7 @@ public class BankRepository{
     private Map<String, CurrencyInfo> currencies;
     private final List<Transaction> outstandingCollections = new CopyOnWriteArrayList<>();
 
+    private final String accountName;
     private final List<Transaction> executedList = new CopyOnWriteArrayList<>();
     private AtomicLong orderCounter = new AtomicLong(0);
     private final AtomicLong outstandingCounter = new AtomicLong(0);
@@ -22,10 +23,11 @@ public class BankRepository{
 
     private int selfTransactions;
 
-    public BankRepository(String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
+    public BankRepository(String accountName, String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
         this.bankBindingName = bankBindingName;
         this.currencies = initializeCurrency(pathToCurrencyFile);
         this.messageDeliveryService = messageDeliveryService;
+        this.accountName = accountName;
     }
 
     public void getQuickBalance(String currency) {
@@ -74,8 +76,10 @@ public class BankRepository{
         }
     }
 
-    public List<String> memberInfo(String groupName) throws RemoteException{
-        return messageDeliveryService.getMemberNames(groupName);
+    public void memberInfo(String groupName) throws RemoteException{
+        for(String member : messageDeliveryService.getMemberNames(groupName)){
+            System.out.println(member);
+        }
     }
 
      // (5) getHistory
@@ -189,5 +193,9 @@ public class BankRepository{
     public void setState(Pair snapshot){
         this.orderCounter = new AtomicLong(snapshot.getOrderCounter());
         this.currencies = snapshot.getCurrencies();
+    }
+
+    public String getAccountName() {
+        return accountName;
     }
 }

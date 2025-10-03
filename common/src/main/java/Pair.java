@@ -18,4 +18,9 @@ public class Pair implements Serializable{
     public Integer getOrderCounter(){
         return orderCounter;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return orderCounter.equals(((Pair)o).orderCounter);
+    }
 }

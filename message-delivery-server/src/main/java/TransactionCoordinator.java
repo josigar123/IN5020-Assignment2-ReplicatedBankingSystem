@@ -105,7 +105,7 @@ public class TransactionCoordinator {
             if(alreadyIn){
                 continue;
             }
-            transactionView.addLast(tx);
+            transactionView.add(tx);
         }
         return transactionView; // Return the complete view after appending the transactions
     }

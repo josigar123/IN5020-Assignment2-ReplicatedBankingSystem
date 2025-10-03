@@ -49,7 +49,7 @@ public class BankServer {
         MessageDeliveryService mds = (MessageDeliveryService) registry.lookup(mdsBindingName);
         System.out.println("[BANK] Found MDS: " + mdsBindingName);
 
-        repository = new BankRepository(bankBindingName, mds, currencyFileName);
+        repository = new BankRepository(accountName, bankBindingName, mds, currencyFileName);
         System.out.println("[BANK] Created Bank Repository");
 
         BankServiceImpl bankImpl = new BankServiceImpl(repository);
@@ -57,7 +57,7 @@ public class BankServer {
         System.out.println("[BANK] Bound BankService as: " + bankBindingName);
 
         // Returns a maybeBalance, needs refactor
-        Pair snapshot = mds.joinGroup(accountName, bankBindingName);
+        Pair snapshot = mds.joinGroup(accountName, bankBindingName, numberOfReplicas);
         if(snapshot != null){
             repository.setState(snapshot);
         }

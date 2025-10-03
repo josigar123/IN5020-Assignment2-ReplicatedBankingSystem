@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements MessageDeliveryService{
@@ -16,20 +17,27 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     private final String REGISTRY_IP = "localhost";
     private final int REGISTRY_PORT = 1099;
     private final Registry registry;
-    private final CountDownLatch latch;
+    private CountDownLatch latch = null;
     private final ReentrantLock lock = new ReentrantLock();
+    private final Lock latchLock = new ReentrantLock();
+    private boolean newBatch = true;
 
-    public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators, int initialNumberOfReplicas) throws RemoteException {
+    public MessageDeliveryServiceImpl(ConcurrentHashMap<String, TransactionCoordinator> coordinators) throws RemoteException {
         super();
         this.coordinators = coordinators;
         registry = LocateRegistry.getRegistry(REGISTRY_IP, REGISTRY_PORT);
-        latch = new CountDownLatch(initialNumberOfReplicas);
     }
 
     @Override
-    public Pair joinGroup(String groupName, String bankServer) throws RemoteException {
+    public Pair joinGroup(String groupName, String bankServer, int numberOfReplicas) throws RemoteException {
 
         try{
+            latchLock.lock();
+            if(newBatch){
+                latch = new CountDownLatch(numberOfReplicas);
+                newBatch = false;
+            }
+            latchLock.unlock();
             // Get the coordinator for the group
             TransactionCoordinator coordinator = coordinators.get(groupName);
 
@@ -42,6 +50,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
         }
         catch(NotBoundException e){
             System.err.println(e.getMessage());
+            latchLock.unlock();
             return null;
         }
     }
@@ -81,6 +90,9 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
             latch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+        finally {
+            newBatch = true;
         }
     }
 }
