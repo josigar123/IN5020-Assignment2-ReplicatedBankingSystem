@@ -29,6 +29,10 @@ public class Group {
         return new ArrayList<>(members.keySet());
     }
 
+    public Map<String, BankServerInfo> getMembersAsMap(){
+        return members;
+    }
+
     public Pair getCurrentBalance() {
         return snapshot;
     }
