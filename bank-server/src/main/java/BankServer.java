@@ -6,10 +6,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class BankServer {
 
@@ -66,7 +63,7 @@ public class BankServer {
         // Create a scheduler
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                System.out.println("[BANK] Sending outstanding collection to MDS...");
+                //System.out.println("[BANK] Sending outstanding collection to MDS..."); // COMMENTED OUT, GOOD FOR DEUBG
                 mds.sendTransactions(accountName, repository.getOutstandingTransactions());
                 repository.setSelfTransactions(repository.getOutstandingTransactions().size());
             } catch (RemoteException e) {
@@ -78,31 +75,77 @@ public class BankServer {
     public static void main(String[] args) throws RemoteException, NotBoundException {
 
         BankConfig bankConfig = BankConfig.fromArgs(args);
-        BankServer bankServer = new BankServer(bankConfig);
 
-        if(bankServer.isInteractive()){
-            bankServer.launchInteractiveCli();
+        if(isInteractive(bankConfig)){
+            List<BankServer> banks= instantiateBanks(bankConfig);
+            launchInteractiveCli(banks);
         }else{
+            BankServer bankServer = new BankServer(bankConfig);
             bankServer.launchBatchProcessing();
         }
 }
 
-    public boolean isInteractive(){
-        return transactionFileName == null;
+    public static List<BankServer> instantiateBanks(BankConfig bankConfig) {
+        ExecutorService executor = Executors.newFixedThreadPool(bankConfig.numberOfReplicas());
+        List<BankServer> banks = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(bankConfig.numberOfReplicas());
+
+        for(int i = 1; i <= bankConfig.numberOfReplicas(); i++){
+            int id = i;
+            executor.submit(() -> {
+                try{
+                    BankConfig config = new BankConfig(
+                            bankConfig.bankBindingName() + id,
+                            bankConfig.mdsBindingName(),
+                            bankConfig.accountName(),
+                            bankConfig.numberOfReplicas(),
+                            bankConfig.currencyFileName(),
+                            bankConfig.transactionFileName()
+                    );
+                    BankServer bankServer = new BankServer(config);
+                    banks.add(bankServer);
+                }catch(Exception e){
+                    System.err.printf("[BANK-R%d] Failed to start: %s%n", id, e.getMessage());
+                    e.printStackTrace();
+                }finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try{
+            latch.await();
+        }catch(InterruptedException e){
+            Thread.currentThread().interrupt();
+            System.err.println("[BANK] Interrupted while waiting for banks to start");
+        }
+
+        executor.shutdown();
+        System.out.printf("[BANK] All %d banks initialized.%n", banks.size());
+
+        return banks;
     }
 
-    public void launchInteractiveCli(){
-        System.out.println("[BANK] Interactive CLI started...");
-        Scanner sc = new Scanner(System.in); // one Scanner for all input
+    public static boolean isInteractive(BankConfig bankConfig) {
+        return bankConfig.transactionFileName() == null;
+    }
+
+    public static void launchInteractiveCli(List<BankServer> servers){
+        System.out.println("[BANK] Interactive CLI started. Type 'exit' to quit.'");
+        Scanner sc = new Scanner(System.in);
         while(true){
-            System.out.printf("[BANK] (%s) > ", accountName);
-            if (!sc.hasNextLine()) break; // gracefully exit if input ends
+            System.out.printf("[BANK] (%s) > ", servers.get(0).accountName);
+            if (!sc.hasNextLine()) break;
+
             String input = sc.nextLine().trim();
-            parser.buildOutstandingTransactions(input);
+            if (input.isEmpty()) continue;
+            for(BankServer bank : servers){
+                bank.parser.buildOutstandingTransactions(input);
+            }
         }
     }
 
-    public void launchBatchProcessing(){
+    public void launchBatchProcessing() throws RemoteException {
         System.out.println("[BANK] Processing transaction batch...");
         try{
             // Read all transactions from supplied file
