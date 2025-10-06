@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 public class BankRepository{
 
@@ -43,8 +44,9 @@ public class BankRepository{
             }
         }
 
-        System.out.println("[BANK] Balance for " + currency + " is " + totalBalance);
-        log("Balance for " + currency + " is " + totalBalance);
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") getQuickBalance " + currency + ". Total Balance: " + totalBalance);
     }
 
     private void log(String message) {
@@ -68,9 +70,16 @@ public class BankRepository{
     
     public void deposit(String currency, double amount) {
         currencies.get(currency).add(amount);
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") deposit " + currency + " " + amount);
     }
     public void addInterest(String currency, double percent) {
         currencies.get(currency).addInterest(percent/100f);
+
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") addInterest " + currency + " " + percent + "%");
     }
 
     public void getSyncedBalanceNaive(String currency) {
@@ -83,6 +92,9 @@ public class BankRepository{
                     }
                     
                     getQuickBalance(currency);
+                    LocalTime now = LocalTime.now();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                    log("(" + now.format(formatter) + ") getSyncedBalanceNaive " + currency);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -100,7 +112,11 @@ public class BankRepository{
 
     public void memberInfo(String groupName) throws RemoteException{
         System.out.println("[BANK] Getting members for group " + groupName + ":");
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") memberInfo " + groupName + ":");
         for(String member : messageDeliveryService.getMemberNames(groupName)){
+            log("\t"+member);
             System.out.println(member);
         }
     }
@@ -127,6 +143,9 @@ public class BankRepository{
             sb.append("\t\t").append(n).append(". ").append(t.getCommand()).append(" ")
                     .append(t.getUniqueId()).append("\n");
         }
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") getHistory:\n " + sb);
         System.out.println(sb);
     }
 
@@ -134,33 +153,51 @@ public class BankRepository{
     public void checkTxStatus(String uniqueId) {
         for (Transaction t : executedList) {
             if (t.getUniqueId().equals(uniqueId)) {
+                LocalTime now = LocalTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": APPLIED");
                 System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ APPLIED");
                 return;
             };
         }
         for (Transaction t : outstandingCollections) {
             if (t.getUniqueId().equals(uniqueId)) {
+                LocalTime now = LocalTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": OUTSTANDING");
                 System.out.println("[BANK] TRANSACTION  ´" + uniqueId + "´ IS OUTSTANDING");
                 return;
-            };
+            }
         }
+
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": UNKNOWN");
         System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ IS UNKNOWN");
     }
 
      // (7) cleanHistory – clean executed_list (not counter)
     public void cleanHistory() {
         executedList.clear();
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") cleanHistory");
     }
 
     public void sleep(double seconds) throws InterruptedException {
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") sleep " + seconds + "s");
         long ms = Math.round(seconds * 1000.0);
         try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 
     public void exit() throws RemoteException {
         System.out.println("[BANK] Exiting...");
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") exit");
         messageDeliveryService.leaveGroup(accountName, bankBindingName);
-        getQuickBalance("USD");
         System.exit(0);
     }
 
