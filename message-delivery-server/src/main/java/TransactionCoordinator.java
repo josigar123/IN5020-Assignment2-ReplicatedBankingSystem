@@ -24,27 +24,24 @@ public class TransactionCoordinator {
 
     private boolean sendWithRetry(BankService bank, List<Transaction> batch) {
         long start = System.currentTimeMillis();
-        int attempt = 0;
 
         while(true){
-            attempt++;
             Future<Boolean> future = executor.submit(() -> bank.deliverOrderedBatch(batch));
             try{
                 boolean ack = future.get(2, TimeUnit.SECONDS);
                 if(ack){
-                    System.out.println("ACK from bank after " + attempt + " attempt(s)");
                     snapshot = bank.getBalance();
                     return true;
                 }
             }catch(TimeoutException e){
                 future.cancel(true);
-                System.out.println("Timeout, retrying...");
+                System.out.println("[MDS] Timeout, retrying...");
             }catch (Exception e){
                 System.out.println(e.getMessage());
             }
 
             if(System.currentTimeMillis() - start > 5000){
-                System.out.println("Bank failed after 5s");
+                System.out.println("[MDS] Bank failed after 5s");
                 return false;
             }
         }
@@ -52,7 +49,7 @@ public class TransactionCoordinator {
 
     private void evictFailedServer(String bankName){
         group.leave(bankName);
-        System.out.println("Evicted: " + bankName);
+        System.out.println("[MDS] Evicted: " + bankName + " from group " + group.getGroupName());
     }
 
     // Method must broadcast received transactions to all group members
@@ -68,6 +65,7 @@ public class TransactionCoordinator {
                     if (!success) {
                         evictFailedServer(bankServerInfo.getName());
                     } else {
+                        System.out.println("[MDS] ACK from bank ´" + bankServerInfo.getName() + "´");
                         Pair tempSnapshot = bank.getBalance();
                         if (tempSnapshot != null && !tempSnapshot.equals(snapshot)) {
                             snapshot = tempSnapshot;

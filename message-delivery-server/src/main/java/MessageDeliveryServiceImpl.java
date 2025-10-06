@@ -33,7 +33,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
 
         try{
             latchLock.lock();
-            if(newBatch){
+            if(newBatch && latch.getCount() == 0){
                 latch = new CountDownLatch(numberOfReplicas);
                 newBatch = false;
             }
@@ -45,6 +45,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
             BankServerInfo bankServerInfo = new BankServerInfo(bank, bankServer);
 
             coordinator.getGroup().join(bankServerInfo);
+            System.out.println("[MDS] Bank ´" + bankServer + "´ joined group: " + groupName);
             latch.countDown();
             return coordinator.getGroup().getCurrentBalance(); // bank sets its balance to this value if present
         }
@@ -59,6 +60,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     public void leaveGroup(String groupName, String bankServer) throws RemoteException {
         Group group = coordinators.get(groupName).getGroup();
         group.leave(bankServer);
+        System.out.println("[MDS] Bank ´" + bankServer + "´ left group: " + groupName );
     }
 
     @Override
@@ -67,6 +69,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
         lock.lock();
         try{
             List<Transaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
+            System.out.println("[MDS] Broadcasting transactions to group: " + groupName);
             coordinators.get(groupName).broadCastTransactions(orderedTransactions);
             
         }finally{
