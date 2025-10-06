@@ -44,7 +44,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     @Override
     @SuppressWarnings("CallToPrintStackTrace")
     public Pair getBalance() throws RemoteException {
-        CompletableFuture<Pair> future = new CompletableFuture();  
+        CompletableFuture<Pair> future = new CompletableFuture<>();
         executor.submit(()->{
             while(deliverPair == null){
             }

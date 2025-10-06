@@ -8,7 +8,7 @@ public class CommandParser {
 
     public String[] parseTransactionFromLine(String line){
         if (line == null || line.isBlank()) {
-            System.out.println("[ERROR] Empty command");
+            System.out.println("[BANK] [ERROR] Empty command");
             return null;
         }
 
@@ -21,10 +21,7 @@ public class CommandParser {
         repository.addOutstandingTransaction(tx);
     }
 
-    // TODO: Fix this
-    //       Make correct mutations to executed list and outstanding list as well as counter variables
     public void executeTransaction(String input) {
-        System.out.println("PARSING: " + input);
         String[] tokens = parseTransactionFromLine(input);
         String cmd = tokens[0];
 
@@ -36,7 +33,7 @@ public class CommandParser {
 
                 case "getquickbalance":
                     if (tokens.length < 2) {
-                        System.out.println("[ERROR] Usage: getQuickBalance <currency>");
+                        System.out.println("[BANK] [ERROR] Usage: getQuickBalance <currency>");
                         break;
                     }
                     repository.getQuickBalance(tokens[1]);
@@ -44,7 +41,7 @@ public class CommandParser {
 
                 case "getsyncedbalance":
                     if (tokens.length < 2) {
-                        System.out.println("[ERROR] Usage: getSyncedBalance <currency>");
+                        System.out.println("[BANK] [ERROR] Usage: getSyncedBalance <currency>");
                         break;
                     }
                     repository.getSyncedBalanceNaive(tokens[1]);
@@ -52,29 +49,29 @@ public class CommandParser {
 
                 case "deposit":
                     if (tokens.length < 3) {
-                        System.out.println("[ERROR] Usage: deposit <currency> <amount>");
+                        System.out.println("[BANK] [ERROR] Usage: deposit <currency> <amount>");
                         break;
                     }
                     String depositCurrency = tokens[1];
                     double depositAmount = Double.parseDouble(tokens[2]);
                     repository.deposit(depositCurrency, depositAmount);
-                    System.out.println("Deposited " + depositAmount + " " + depositCurrency);
+                    System.out.println("[BANK] Deposited " + depositAmount + " " + depositCurrency);
                     break;
 
                 case "addinterest":
                     if (tokens.length < 3) {
-                        System.out.println("[ERROR] Usage: addInterest <currency> <percent>");
+                        System.out.println("[BANK] [ERROR] Usage: addInterest <currency> <percent>");
                         break;
                     }
                     String interestCurrency = tokens[1];
                     double percent = Double.parseDouble(tokens[2]);
                     repository.addInterest(interestCurrency, percent);
-                    System.out.println("Added interest " + percent + "% to " + interestCurrency);
+                    System.out.println("[BANK] Added interest " + percent + "% to " + interestCurrency);
                     break;
 
                 case "checktxstatus":
                     if (tokens.length < 2) {
-                        System.out.println("[ERROR] Usage: checkTxStatus <id>");
+                        System.out.println("[BANK] [ERROR] Usage: checkTxStatus <id>");
                         break;
                     }
                     repository.checkTxStatus(tokens[1]);
@@ -90,7 +87,7 @@ public class CommandParser {
 
                 case "sleep":
                     if (tokens.length < 2) {
-                        System.out.println("[ERROR] Usage: sleep <seconds>");
+                        System.out.println("[BANK] [ERROR] Usage: sleep <seconds>");
                         break;
                     }
 
@@ -103,12 +100,12 @@ public class CommandParser {
                     break;
 
                 default:
-                    System.out.println("[ERROR] Unknown command: " + cmd);
+                    System.out.println("[BANK] [ERROR] Unknown command: " + cmd);
                     break;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("[ERROR] Exception: " + e.getMessage());
+            System.out.println("[BANK] [ERROR] Exception: " + e.getMessage());
         }
     }
 }

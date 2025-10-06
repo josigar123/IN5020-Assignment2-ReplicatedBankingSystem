@@ -28,13 +28,6 @@ public class BankServer {
     private final CommandParser parser;
     private final BankRepository repository;
 
-   /*
-    TODO:
-        2. Refaktorer parser til å kalle alle metodene i BankRepository OK
-        14. CommandParser må legge til transaksjoner i outstanding_collections OK
-        15. Etter du har sent Outstanding_collections og fått view fra mds, må commandparser kjøre kommandoene OK
-    */
-
     public BankServer(BankConfig config) throws RemoteException, NotBoundException {
         bankBindingName = config.bankBindingName(); // e.g. "bank-R1"
         mdsBindingName = config.mdsBindingName(); // e.g. "message-delivery-service"
@@ -61,9 +54,9 @@ public class BankServer {
         if(snapshot != null){
             repository.setState(snapshot);
         }
-        System.out.printf("[BANK] Joined group %s", accountName);
+        System.out.printf("[BANK] Joined group %s\n", accountName);
 
-        System.out.println("[BANK] Waiting for all banks to join group...");
+        System.out.println("[BANK] Waiting for all banks to join group " + accountName + "...");
         mds.awaitExecution();
         System.out.println("[BANK] Bank server started");
 
@@ -79,7 +72,7 @@ public class BankServer {
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     public static void main(String[] args) throws RemoteException, NotBoundException {
@@ -105,7 +98,6 @@ public class BankServer {
             System.out.printf("[BANK] (%s) > ", accountName);
             if (!sc.hasNextLine()) break; // gracefully exit if input ends
             String input = sc.nextLine().trim();
-            System.out.println("READ LINE: " + input);
             parser.buildOutstandingTransactions(input);
         }
     }

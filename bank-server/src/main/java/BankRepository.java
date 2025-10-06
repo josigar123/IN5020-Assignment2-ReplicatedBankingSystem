@@ -43,7 +43,7 @@ public class BankRepository{
             }
         }
 
-        System.out.println("Balance for " + currency + " is " + totalBalance);
+        System.out.println("[BANK] Balance for " + currency + " is " + totalBalance);
         log("Balance for " + currency + " is " + totalBalance);
     }
 
@@ -101,41 +101,49 @@ public class BankRepository{
     }
 
     public void memberInfo(String groupName) throws RemoteException{
+        System.out.println("[BANK] Getting members for group " + groupName + ":");
         for(String member : messageDeliveryService.getMemberNames(groupName)){
             System.out.println(member);
         }
     }
 
      // (5) getHistory
-    public String getHistory() {
+    public void getHistory() {
         StringBuilder sb = new StringBuilder();
         long start = orderCounter.get() - executedList.size();
+        sb.append("[BANK] Transaction history:");
 
-        sb.append("executed_list\n");
+        sb.append("\tExecuted transactions:\n");
         for (int i = 0; i < executedList.size(); i++) {
             Transaction t = executedList.get(i);
             long n = start + i + 1; 
-            sb.append(n).append(". ")
+            sb.append("\t\t").append(n).append(". ")
               .append(t.getCommand()).append(" ")
               .append(t.getUniqueId()).append("\n");
         }
 
-        sb.append("\noutstanding_collection\n");
+        sb.append("\n\tOutstanding transactions:\n");
         for (Transaction t : outstandingCollections) {
-            sb.append(t.getCommand()).append("\n");
+            sb.append("\t\t").append(t.getCommand()).append("\n");
         }
-        return sb.toString();
+        System.out.println(sb);
     }
 
     // (6) checkTxStatus <unique_id>
-    public String checkTxStatus(String uniqueId) {
+    public void checkTxStatus(String uniqueId) {
         for (Transaction t : executedList) {
-            if (t.getUniqueId().equals(uniqueId)) return "APPLIED";
+            if (t.getUniqueId().equals(uniqueId)) {
+                System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ APPLIED");
+                return;
+            };
         }
         for (Transaction t : outstandingCollections) {
-            if (t.getUniqueId().equals(uniqueId)) return "OUTSTANDING";
+            if (t.getUniqueId().equals(uniqueId)) {
+                System.out.println("[BANK] TRANSACTION  ´" + uniqueId + "´ IS OUTSTANDING");
+                return;
+            };
         }
-        return "UNKNOWN";
+        System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ IS UNKNOWN");
     }
 
      // (7) cleanHistory – clean executed_list (not counter)

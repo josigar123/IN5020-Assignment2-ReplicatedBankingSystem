@@ -8,7 +8,7 @@ public record BankConfig(
 ) {
     public static BankConfig fromArgs(String[] args) {
         if (args.length < 5 || args.length > 6) {
-            throw new IllegalArgumentException("Usage: BankServer <bankBindingName> <mdsBindingName> <accountName> <numberOfReplicas> <currencyFileName> [transactionFileName]");
+            throw new IllegalArgumentException("[BANK] Usage: BankServer <bankBindingName> <mdsBindingName> <accountName> <numberOfReplicas> <currencyFileName> [transactionFileName]");
         }
         return new BankConfig(
                 args[0],
