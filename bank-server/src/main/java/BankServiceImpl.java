@@ -29,6 +29,9 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 CommandParser parser = new CommandParser(repository);
                 for(int i = idx; i < orderedTransactions.size(); i++){
                     parser.executeTransaction(orderedTransactions.get(i).command());
+
+                    repository.getExecutedTransactions().add(orderedTransactions.get(i));
+                    repository.getOutstandingTransactions().remove(orderedTransactions.get(i));
                     repository.getOrderCounter().incrementAndGet();
                 }
                 deliverPair = new Pair(repository.getCurrencies(), repository.getOrderCounter().intValue());     
