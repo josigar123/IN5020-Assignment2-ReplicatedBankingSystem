@@ -31,6 +31,8 @@ public class CommandParser {
 
         try {
             switch (cmd.toLowerCase()) {
+                case "memberinfo", "gethistory", "cleanhistory", "exit":
+                    return true;
                 case "getquickbalance":
                     if (tokens.length < 2) {
                         System.out.println("[BANK] [ERROR] Usage: getQuickBalance <currency>");
