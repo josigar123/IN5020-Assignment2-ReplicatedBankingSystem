@@ -60,7 +60,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
     public void leaveGroup(String groupName, String bankServer) throws RemoteException {
         Group group = coordinators.get(groupName).getGroup();
         group.leave(bankServer);
-        System.out.println("[MDS] Bank ´" + bankServer + "´ left group: " + groupName );
+        System.out.println("[MDS] Bank '" + bankServer + "' left group: " + groupName );
     }
 
     @Override

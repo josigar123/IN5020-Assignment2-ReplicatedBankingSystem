@@ -54,6 +54,10 @@ public class TransactionCoordinator {
 
     // Method must broadcast received transactions to all group members
     public void broadCastTransactions(List<Transaction> orderedTransactions)  {
+        if(group.getMembers().isEmpty()){
+            return;
+        }
+
         int membersCount = group.getMembers().size();
         CountDownLatch latch = new CountDownLatch(membersCount);
 
@@ -61,6 +65,7 @@ public class TransactionCoordinator {
             BankService bank = bankServerInfo.getBank();
             executor.submit(() -> {
                 try {
+
                     boolean success = sendWithRetry(bank, orderedTransactions);
                     if (!success) {
                         evictFailedServer(bankServerInfo.getName());
