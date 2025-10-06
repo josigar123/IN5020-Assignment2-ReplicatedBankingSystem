@@ -3,13 +3,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.rmi.RemoteException;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 
 public class BankRepository{
 
@@ -75,11 +75,19 @@ public class BankRepository{
         log("(" + now.format(formatter) + ") deposit " + currency + " " + amount);
     }
     public void addInterest(String currency, double percent) {
-        currencies.get(currency).addInterest(percent/100f);
-
         LocalTime now = LocalTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        log("(" + now.format(formatter) + ") addInterest " + currency + " " + percent + "%");
+
+        if (currency == null) {
+            
+            for (Map.Entry<String, CurrencyInfo> entry : currencies.entrySet()) {
+                entry.getValue().addInterest(percent / 100f);
+            }
+            log("(" + now.format(formatter) + ") addInterest all currencies " + percent + "%");
+        } else {
+            currencies.get(currency).addInterest(percent / 100f);
+            log("(" + now.format(formatter) + ") addInterest " + currency + " " + percent + "%");
+        }
     }
 
     public void getSyncedBalanceNaive(String currency) {
@@ -91,10 +99,19 @@ public class BankRepository{
                         outstandingCollections.wait();
                     }
                     
-                    getQuickBalance(currency);
+                    double totalBalance = currencies.get(currency).getAccountValue();
+
+                    for(String currString: currencies.keySet()){
+                        if(!currString.equals(currency)){
+                            double amountPresent = currencies.get(currString).getAccountValue();
+                            double amountPresentInDollar = amountPresent * currencies.get(currString).getRate();
+                            totalBalance += amountPresentInDollar / currencies.get(currency).getRate();
+                        }
+                    }
+
                     LocalTime now = LocalTime.now();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                    log("(" + now.format(formatter) + ") getSyncedBalanceNaive " + currency);
+                    log("(" + now.format(formatter) + ") getSyncedBalanceNaive " + currency + ". Total Balance: " + totalBalance);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -194,8 +211,12 @@ public class BankRepository{
 
     public void exit() throws RemoteException {
         System.out.println("[BANK] Exiting...");
+
         LocalTime now = LocalTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        for (Map.Entry<String, CurrencyInfo> entry : currencies.entrySet()) {
+            log("currency: " + entry.getKey() + " -> " + entry.getValue().getAccountValue());
+        }
         log("(" + now.format(formatter) + ") exit");
         messageDeliveryService.leaveGroup(accountName, bankBindingName);
         System.exit(0);

@@ -32,6 +32,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                     repository.getExecutedTransactions().add(orderedTransactions.get(i));
                     repository.getOutstandingTransactions().remove(orderedTransactions.get(i));
+                    repository.notifyGetSyncedBalance();
                     repository.getOrderCounter().incrementAndGet();
                 }
                 deliverPair = new Pair(repository.getCurrencies(), repository.getOrderCounter().intValue());     

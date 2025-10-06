@@ -19,9 +19,17 @@ public class CommandParser {
         boolean isValid = verifyTransaction(command);
 
         if(isValid) {
-            String uniqueId = repository.getBankBindingName() + ":" + repository.getOutstandingCount();
-            Transaction tx = new Transaction(command, uniqueId);
-            repository.addOutstandingTransaction(tx);
+            String[] tokens = parseTransactionFromLine(command);
+            String cmd = tokens[0];
+            switch(cmd.toLowerCase()){
+                case "addinterest", "deposit":
+                    String uniqueId = repository.getBankBindingName() + ":" + repository.getOutstandingCount();
+                    Transaction tx = new Transaction(command, uniqueId);
+                    repository.addOutstandingTransaction(tx);
+                    break;
+                default:
+                    executeTransaction(command);
+            }
         }
     }
 
@@ -55,8 +63,8 @@ public class CommandParser {
                     return true;
 
                 case "addinterest":
-                    if (tokens.length < 3) {
-                        System.out.println("[BANK] [ERROR] Usage: addInterest <currency> <percent>");
+                    if (tokens.length < 2) {
+                        System.out.println("[BANK] [ERROR] Usage: addInterest [currency] <percent>");
                         break;
                     }
                     return true;
@@ -111,10 +119,18 @@ public class CommandParser {
                     break;
 
                 case "addinterest":
-                    String interestCurrency = tokens[1];
-                    double percent = Double.parseDouble(tokens[2]);
-                    repository.addInterest(interestCurrency, percent);
-                    System.out.println("[BANK] Added interest " + percent + "% to " + interestCurrency);
+                    if(tokens.length == 2){
+                        double percent = Double.parseDouble(tokens[1]);
+                        repository.addInterest(null, percent);
+                        System.out.println("[BANK] Added interest " + percent + "% to all currencies");
+                    }
+                    else{
+                        String interestCurrency = tokens[1];
+                        double percent = Double.parseDouble(tokens[2]);
+                        repository.addInterest(interestCurrency, percent);
+                        System.out.println("[BANK] Added interest " + percent + "% to " + interestCurrency);
+                    }
+                    
                     break;
 
                 case "checktxstatus":
