@@ -48,8 +48,6 @@ public class BankRepository{
     }
 
     private void log(String message) {
-        System.out.println(message); // console output
-
         // Directory to store logs
         String dir = "results";
         File directory = new File(dir);
@@ -111,7 +109,7 @@ public class BankRepository{
     public void getHistory() {
         StringBuilder sb = new StringBuilder();
         long start = orderCounter.get() - executedList.size();
-        sb.append("[BANK] Transaction history:");
+        sb.append("[BANK] Transaction history:\n");
 
         sb.append("\tExecuted transactions:\n");
         for (int i = 0; i < executedList.size(); i++) {
@@ -123,8 +121,11 @@ public class BankRepository{
         }
 
         sb.append("\n\tOutstanding transactions:\n");
-        for (Transaction t : outstandingCollections) {
-            sb.append("\t\t").append(t.getCommand()).append("\n");
+        for (int i = 0; i < outstandingCollections.size(); i++) {
+            Transaction t = outstandingCollections.get(i);
+            long n = start + i + 1;
+            sb.append("\t\t").append(n).append(". ").append(t.getCommand()).append(" ")
+                    .append(t.getUniqueId()).append("\n");
         }
         System.out.println(sb);
     }
@@ -156,8 +157,9 @@ public class BankRepository{
         try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 
-    public void exit(){
+    public void exit() throws RemoteException {
         System.out.println("[BANK] Exiting...");
+        messageDeliveryService.leaveGroup(accountName, bankBindingName);
         getQuickBalance("USD");
         System.exit(0);
     }
