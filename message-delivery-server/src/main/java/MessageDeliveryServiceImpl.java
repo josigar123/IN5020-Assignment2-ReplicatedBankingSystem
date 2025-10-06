@@ -33,7 +33,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
 
         try{
             latchLock.lock();
-            if(newBatch && latch.getCount() == 0){
+            if(newBatch){
                 latch = new CountDownLatch(numberOfReplicas);
                 newBatch = false;
             }
