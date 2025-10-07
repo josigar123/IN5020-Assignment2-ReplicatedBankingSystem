@@ -113,7 +113,19 @@ public class TransactionCoordinator {
         return transactionView; // Return the complete view after appending the transactions
     }
 
+    public void removeGetSyncedBalance() {
+    for (int i = transactionView.size() - 1; i >= 0; i--) {
+        String command = transactionView.get(i).command().split(" ")[0];
+        if (command.equalsIgnoreCase("getsyncedbalance")) {
+            transactionView.remove(i);
+        }
+    }
+}
+
     public Group getGroup() {
         return group;
+    }
+    public List<Transaction> getTransactionView(){
+        return transactionView;
     }
 }

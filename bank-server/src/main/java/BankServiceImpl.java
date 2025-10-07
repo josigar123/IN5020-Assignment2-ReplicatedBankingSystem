@@ -28,12 +28,22 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 int idx = repository.getOrderCounter().intValue();
                 CommandParser parser = new CommandParser(repository);
                 for(int i = idx; i < orderedTransactions.size(); i++){
-                    parser.executeTransaction(orderedTransactions.get(i).command());
+                    String command = parser.parseTransactionFromLine(orderedTransactions.get(i).command())[0];
+                    String bankName = orderedTransactions.get(i).uniqueId().split(":")[0];
+                    Transaction t = orderedTransactions.get(i);
+                    if(command.toLowerCase().equals("getsyncedbalance")){
+                        if(bankName.equals(repository.getBankBindingName())){
+                            parser.executeTransaction(t.command());
+                        }
+                    }
+                    else{
+                        parser.executeTransaction(t.command());
 
-                    repository.getExecutedTransactions().add(orderedTransactions.get(i));
-                    repository.getOutstandingTransactions().remove(orderedTransactions.get(i));
-                    repository.notifyGetSyncedBalance();
-                    repository.getOrderCounter().incrementAndGet();
+                        repository.getExecutedTransactions().add(t);
+                        //repository.notifyGetSyncedBalance();
+                        repository.getOrderCounter().incrementAndGet();
+                    }
+                    repository.getOutstandingTransactions().remove(t);
                 }
                 deliverPair = new Pair(repository.getCurrencies(), repository.getOrderCounter().intValue());     
             } finally {
@@ -64,6 +74,10 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     public BankRepository getRepository() {
         return this.repository;
+    }
+
+    public void exitExecutor(){
+        executor.shutdown();
     }
 
 }

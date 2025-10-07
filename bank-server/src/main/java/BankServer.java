@@ -6,7 +6,13 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class BankServer {
 
@@ -65,7 +71,6 @@ public class BankServer {
             try {
                 //System.out.println("[BANK] Sending outstanding collection to MDS..."); // COMMENTED OUT, GOOD FOR DEUBG
                 mds.sendTransactions(accountName, repository.getOutstandingTransactions());
-                repository.setSelfTransactions(repository.getOutstandingTransactions().size());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -83,7 +88,9 @@ public class BankServer {
             BankServer bankServer = new BankServer(bankConfig);
             bankServer.launchBatchProcessing();
         }
-}
+
+        System.exit(0);
+    }
 
     public static List<BankServer> instantiateBanks(BankConfig bankConfig) {
         ExecutorService executor = Executors.newFixedThreadPool(bankConfig.numberOfReplicas());
@@ -138,9 +145,21 @@ public class BankServer {
             if (!sc.hasNextLine()) break;
 
             String input = sc.nextLine().trim();
+            boolean exitFlag = false;
             if (input.isEmpty()) continue;
             for(BankServer bank : servers){
-                bank.parser.buildOutstandingTransactions(input);
+                if(input.equals("exit")){
+                    exitFlag = true;
+                }
+                if(!exitFlag){
+                    bank.parser.buildOutstandingTransactions(input);
+                }
+                else{
+                    bank.parser.buildOutstandingTransactions("exitinteractive");
+                }
+            }
+            if(exitFlag){
+                break;
             }
         }
     }
@@ -161,8 +180,12 @@ public class BankServer {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            repository.exit();
+            repository.exit(false);
         }
+    }
+
+    public BankRepository getRepository(){
+        return this.repository;
     }
 
 }

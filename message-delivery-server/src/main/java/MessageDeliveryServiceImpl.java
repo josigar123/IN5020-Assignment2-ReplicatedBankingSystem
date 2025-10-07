@@ -71,6 +71,7 @@ public class MessageDeliveryServiceImpl extends UnicastRemoteObject implements M
             List<Transaction> orderedTransactions = coordinators.get(groupName).setTransactionOrder(transactions);
             System.out.println("[MDS] Broadcasting transactions to group: " + groupName);
             coordinators.get(groupName).broadCastTransactions(orderedTransactions);
+            coordinators.get(groupName).removeGetSyncedBalance();
             
         }finally{
             lock.unlock();

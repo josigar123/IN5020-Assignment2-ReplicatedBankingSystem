@@ -24,8 +24,6 @@ public class BankRepository{
     private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
     private final String bankBindingName;
 
-    private int selfTransactions;
-
     public BankRepository(String accountName, String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
         this.bankBindingName = bankBindingName;
         this.currencies = initializeCurrency(pathToCurrencyFile);
@@ -88,6 +86,22 @@ public class BankRepository{
             currencies.get(currency).addInterest(percent / 100f);
             log("(" + now.format(formatter) + ") addInterest " + currency + " " + percent + "%");
         }
+    }
+
+    public void getSyncedBalanceSmart(String currency) {
+        double totalBalance = currencies.get(currency).getAccountValue();
+
+        for(String currString: currencies.keySet()){
+            if(!currString.equals(currency)){
+                double amountPresent = currencies.get(currString).getAccountValue();
+                double amountPresentInDollar = amountPresent * currencies.get(currString).getRate();
+                totalBalance += amountPresentInDollar / currencies.get(currency).getRate();
+            }
+        }
+
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log("(" + now.format(formatter) + ") getSyncedBalanceSmart " + currency + ". Total Balance: " + totalBalance);
     }
 
     public void getSyncedBalanceNaive(String currency) {
@@ -209,7 +223,7 @@ public class BankRepository{
         try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 
-    public void exit() throws RemoteException {
+    public void exit(boolean isInteractive) throws RemoteException {
         System.out.println("[BANK] Exiting...");
 
         LocalTime now = LocalTime.now();
@@ -219,7 +233,9 @@ public class BankRepository{
         }
         log("(" + now.format(formatter) + ") exit");
         messageDeliveryService.leaveGroup(accountName, bankBindingName);
-        System.exit(0);
+        if(!isInteractive){
+            System.exit(0);
+        }
     }
 
     public void addOutstandingTransaction(Transaction transaction){
@@ -261,14 +277,6 @@ public class BankRepository{
 
     public List<Transaction> getOutstandingTransactions() {
          return this.outstandingCollections;
-    }
-
-    public void setSelfTransactions(int selfTransactions) {
-        this.selfTransactions = selfTransactions;
-    }
-
-    public int getSelfTransactions() {
-        return selfTransactions;
     }
 
     public List<Transaction> getExecutedTransactions() {

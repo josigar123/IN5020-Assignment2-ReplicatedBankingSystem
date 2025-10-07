@@ -22,7 +22,7 @@ public class CommandParser {
             String[] tokens = parseTransactionFromLine(command);
             String cmd = tokens[0];
             switch(cmd.toLowerCase()){
-                case "addinterest", "deposit":
+                case "addinterest", "deposit", "getsyncedbalance":
                     String uniqueId = repository.getBankBindingName() + ":" + repository.getOutstandingCount();
                     Transaction tx = new Transaction(command, uniqueId);
                     repository.addOutstandingTransaction(tx);
@@ -39,7 +39,7 @@ public class CommandParser {
 
         try {
             switch (cmd.toLowerCase()) {
-                case "memberinfo", "gethistory", "cleanhistory", "exit":
+                case "memberinfo", "gethistory", "cleanhistory", "exit", "exitinteractive":
                     return true;
                 case "getquickbalance":
                     if (tokens.length < 2) {
@@ -108,7 +108,8 @@ public class CommandParser {
                     break;
 
                 case "getsyncedbalance":
-                    repository.getSyncedBalanceNaive(tokens[1]);
+                    repository.getSyncedBalanceSmart(tokens[1]);
+                    //repository.getSyncedBalanceNaive(tokens[1]);
                     break;
 
                 case "deposit":
@@ -151,7 +152,10 @@ public class CommandParser {
                     break;
 
                 case "exit":
-                    repository.exit();
+                    repository.exit(false);
+                    break;
+                case "exitinteractive":
+                    repository.exit(true);
                     break;
 
                 default:
