@@ -16,6 +16,8 @@ public class BankRepository{
     private Map<String, CurrencyInfo> currencies;
     private final List<Transaction> outstandingCollections = new CopyOnWriteArrayList<>();
 
+    private final Map<Transaction, LocalTime> transactionTimeMap = new HashMap<>();
+    private LocalTime executionTimestamp;
     private final String accountName;
     private final List<Transaction> executedList = new CopyOnWriteArrayList<>();
     private AtomicLong orderCounter = new AtomicLong(0);
@@ -69,11 +71,13 @@ public class BankRepository{
     public void deposit(String currency, double amount) {
         currencies.get(currency).add(amount);
         LocalTime now = LocalTime.now();
+        executionTimestamp = now;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         log("(" + now.format(formatter) + ") deposit " + currency + " " + amount);
     }
     public void addInterest(String currency, double percent) {
         LocalTime now = LocalTime.now();
+        executionTimestamp = now;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
         if (currency == null) {
@@ -156,6 +160,7 @@ public class BankRepository{
     public void getHistory() {
         StringBuilder sb = new StringBuilder();
         long start = orderCounter.get() - executedList.size();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         sb.append("[BANK] Transaction history:\n");
 
         sb.append("\tExecuted transactions:\n");
@@ -163,6 +168,7 @@ public class BankRepository{
             Transaction t = executedList.get(i);
             long n = start + i + 1; 
             sb.append("\t\t").append(n).append(". ")
+              .append(transactionTimeMap.get(t).format(formatter)).append(" ")
               .append(t.getCommand()).append(" ")
               .append(t.getUniqueId()).append("\n");
         }
@@ -175,7 +181,6 @@ public class BankRepository{
                     .append(t.getUniqueId()).append("\n");
         }
         LocalTime now = LocalTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         log("(" + now.format(formatter) + ") getHistory:\n " + sb);
         System.out.println(sb);
     }
@@ -274,6 +279,11 @@ public class BankRepository{
 
     public List<Transaction> getExecutedTransactions() {
         return executedList;
+    }
+
+    public void addToExecutedList(Transaction tAdd){
+        executedList.add(tAdd);
+        transactionTimeMap.put(tAdd, executionTimestamp);
     }
 
     public AtomicLong getOrderCounter(){
