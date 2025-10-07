@@ -182,17 +182,10 @@ public class BankRepository{
 
     // (6) checkTxStatus <unique_id>
     public void checkTxStatus(String uniqueId) {
-        for (Transaction t : executedList) {
-            if (t.getUniqueId().equals(uniqueId)) {
-                LocalTime now = LocalTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": APPLIED");
-                System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ APPLIED");
-                return;
-            };
-        }
         for (Transaction t : outstandingCollections) {
-            if (t.getUniqueId().equals(uniqueId)) {
+            System.out.print(t.getUniqueId());
+            String[] extractedTValue = t.getUniqueId().split(":");
+            if (extractedTValue[1].equals(uniqueId)) {
                 LocalTime now = LocalTime.now();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
                 log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": OUTSTANDING");
@@ -203,8 +196,8 @@ public class BankRepository{
 
         LocalTime now = LocalTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": UNKNOWN");
-        System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ IS UNKNOWN");
+        log("(" + now.format(formatter) + ") checkTxStatus  " + uniqueId + ": APPLIED");
+        System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ IS APPLIED");
     }
 
      // (7) cleanHistory – clean executed_list (not counter)
