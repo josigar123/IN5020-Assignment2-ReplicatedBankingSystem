@@ -1,38 +1,62 @@
 public class CommandParser {
 
+    /*
+     * CommandParser is responsible for interpreting and executing the commands 
+     * given by the input file, in other words, the banking operations.
+     * It parses through input strings, validates commands, and deligates actions
+     * to the BankRepository.
+     */
+
+
+    // Reference to repo for handling bank logic and data
     private final BankRepository repository;
 
+    // Constructor
     public CommandParser(BankRepository repository) {
         this.repository = repository;
     }
 
+    // Splits transactions into tokens (words), returns null if input is empty or invalid
     public String[] parseTransactionFromLine(String line){
         if (line == null || line.isBlank()) {
             System.out.println("[BANK] [ERROR] Empty command");
             return null;
         }
-
+        // Split by space, trimming extra spaces
         return line.trim().split("\\s+");
     }
 
+    /*
+     * Determines if a command should be executed immidiately or queued 
+     * as an outstanding transactions.
+     */
     public void buildOutstandingTransactions(String command){
+
+        //Validates command
         boolean isValid = verifyTransaction(command);
 
         if(isValid) {
             String[] tokens = parseTransactionFromLine(command);
             String cmd = tokens[0];
+
+            // Certain commands (like deposit) are queued for later execution
             switch(cmd.toLowerCase()){
                 case "addinterest", "deposit", "getsyncedbalance":
+
+                    //Create unique transaction ID and queues for later execution
                     String uniqueId = repository.getBankBindingName() + ":" + repository.getOutstandingCount();
                     Transaction tx = new Transaction(command, uniqueId);
                     repository.addOutstandingTransaction(tx);
                     break;
+
+                // Other commands execute immidiately    
                 default:
                     executeTransaction(command);
             }
         }
     }
 
+    // Validates wheter a given command string has the correct strucure and arguments
     public boolean verifyTransaction(String input){
         String[] tokens = parseTransactionFromLine(input);
         String cmd = tokens[0];
@@ -77,6 +101,7 @@ public class CommandParser {
         return false;
     }
 
+    // Executes a valid banking command by delegating to BankRepository
     public void executeTransaction(String input) {
         String[] tokens = parseTransactionFromLine(input);
         String cmd = tokens[0];
