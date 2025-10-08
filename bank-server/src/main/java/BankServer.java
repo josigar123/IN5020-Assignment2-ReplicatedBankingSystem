@@ -101,14 +101,18 @@ public class BankServer {
         System.exit(0);
     }
 
-    // Starts BankServer threads for interactive mode. So one JVM will host numOfReplicas threads
+    // Starts numOfReplicas BankServers for interactive mode. So one JVM will host numOfReplicas banks
     public static List<BankServer> instantiateBanks(BankConfig bankConfig) {
+        // Thread pool with numOfReplicas size
         ExecutorService executor = Executors.newFixedThreadPool(bankConfig.numberOfReplicas());
+        // List for keeping track of BankServers instantiated
         List<BankServer> banks = new CopyOnWriteArrayList<>();
+        // Latch so that every replica waits for each other to initialize
         CountDownLatch latch = new CountDownLatch(bankConfig.numberOfReplicas());
 
+        // Loop to start numOfreplicas BankServers
         for(int i = 1; i <= bankConfig.numberOfReplicas(); i++){
-            int id = i;
+            int id = i; // Each bank gets a uniqueId
             executor.submit(() -> {
                 try{
                     BankConfig config = new BankConfig(
@@ -130,6 +134,7 @@ public class BankServer {
             });
         }
 
+        // Waits for latch to open
         try{
             latch.await();
         }catch(InterruptedException e){
@@ -137,6 +142,7 @@ public class BankServer {
             System.err.println("[BANK] Interrupted while waiting for banks to start");
         }
 
+        // Clean up executor after latch since all the banks are instatiated
         executor.shutdown();
         System.out.printf("[BANK] All %d banks initialized.%n", banks.size());
 
@@ -151,14 +157,19 @@ public class BankServer {
     // Read reply loop for adding transactions through terminal
     public static void launchInteractiveCli(List<BankServer> servers){
         System.out.println("[BANK] Interactive CLI started. Type 'exit' to quit.'");
+        // Reads information from terminal
         Scanner sc = new Scanner(System.in);
+
+        // Inf loop till exit is called
         while(true){
             System.out.printf("[BANK] (%s) > ", servers.get(0).accountName);
             if (!sc.hasNextLine()) break;
 
             String input = sc.nextLine().trim();
-            boolean exitFlag = false;
+            boolean exitFlag = false; // flag for when exit is called
             if (input.isEmpty()) continue;
+
+            // Every command gets passed to every bank for processing
             for(BankServer bank : servers){
                 if(input.equals("exit")){
                     exitFlag = true;
