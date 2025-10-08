@@ -144,7 +144,8 @@ public class TransactionCoordinator {
         return transactionView; // Return the complete view after appending the transactions
     }
 
-    // Simply removes the getSyncedBalance from the view (snapshot) by iterating over the view
+    // Simply removes the getSyncedBalance from the view (snapshot) by iterating over the view, used for
+    // ensuring that only the bank who wants to execute it in its local view gets is
     public void removeGetSyncedBalance() {
     for (int i = transactionView.size() - 1; i >= 0; i--) {
         String command = transactionView.get(i).command().split(" ")[0];
