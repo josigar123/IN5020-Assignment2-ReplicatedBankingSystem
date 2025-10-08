@@ -18,6 +18,7 @@ public class BankServer {
 
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    // For rmiregistry
     private static final String REGISTRY_IP = "localhost";
     private static final int REGISTRY_PORT = 1099;
 
@@ -26,11 +27,12 @@ public class BankServer {
     private final String accountName; // e.g. "group3"
     private final int numberOfReplicas; // e.g. 3
     private final String currencyFileName; // e.g. "path/to/currencies.txt"
-    private final String transactionFileName;
+    private final String transactionFileName; // e.g. "Rep1.txt"
 
     private final CommandParser parser;
     private final BankRepository repository;
 
+    // Constructor reads information from BankConfig
     public BankServer(BankConfig config) throws RemoteException, NotBoundException {
         bankBindingName = config.bankBindingName(); // e.g. "bank-R1"
         mdsBindingName = config.mdsBindingName(); // e.g. "message-delivery-service"
@@ -39,20 +41,25 @@ public class BankServer {
         currencyFileName = config.currencyFileName(); // e.g. "path/to/currencies.txt"
         transactionFileName = config.transactionFileName(); // e.g. "path/to/transactions.txt"
 
+        // Find rmiregistry
         Registry registry = LocateRegistry.getRegistry(REGISTRY_IP, REGISTRY_PORT);
         System.out.println("[BANK] Located registry");
 
+        // Find mds stub
         MessageDeliveryService mds = (MessageDeliveryService) registry.lookup(mdsBindingName);
         System.out.println("[BANK] Found MDS: " + mdsBindingName);
 
+        // Create bank repository
         repository = new BankRepository(accountName, bankBindingName, mds, currencyFileName);
         System.out.println("[BANK] Created Bank Repository");
 
+        // Create BankService skeleton for rmi
         BankServiceImpl bankImpl = new BankServiceImpl(repository);
         registry.rebind(bankBindingName, bankImpl);
         System.out.println("[BANK] Bound BankService as: " + bankBindingName);
 
-        // Returns a maybeBalance, needs refactor
+        // Joins the group determined by accountname
+        // Checks if existing replicas have run to share their state
         Pair snapshot = mds.joinGroup(accountName, bankBindingName, numberOfReplicas);
         if(snapshot != null){
             repository.setState(snapshot);
@@ -66,7 +73,7 @@ public class BankServer {
         parser = new CommandParser(repository);
         System.out.println("[BANK] Command parser created");
 
-        // Create a scheduler
+        // Create a scheduler for sending transactions every 10 seconds
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 //System.out.println("[BANK] Sending outstanding collection to MDS..."); // COMMENTED OUT, GOOD FOR DEUBG
@@ -79,6 +86,7 @@ public class BankServer {
 
     public static void main(String[] args) throws RemoteException, NotBoundException {
 
+        // Runs interactive mode or batch mode depending on the user configuration
         BankConfig bankConfig = BankConfig.fromArgs(args);
 
         if(isInteractive(bankConfig)){
@@ -89,9 +97,11 @@ public class BankServer {
             bankServer.launchBatchProcessing();
         }
 
+        // explicit call for jvm that runs interactive threads
         System.exit(0);
     }
 
+    // Starts BankServer threads for interactive mode. So one JVM will host numOfReplicas threads
     public static List<BankServer> instantiateBanks(BankConfig bankConfig) {
         ExecutorService executor = Executors.newFixedThreadPool(bankConfig.numberOfReplicas());
         List<BankServer> banks = new CopyOnWriteArrayList<>();
@@ -133,10 +143,12 @@ public class BankServer {
         return banks;
     }
 
+    // Helper function for determining configuration
     public static boolean isInteractive(BankConfig bankConfig) {
         return bankConfig.transactionFileName() == null;
     }
 
+    // Read reply loop for adding transactions through terminal
     public static void launchInteractiveCli(List<BankServer> servers){
         System.out.println("[BANK] Interactive CLI started. Type 'exit' to quit.'");
         Scanner sc = new Scanner(System.in);
@@ -164,13 +176,14 @@ public class BankServer {
         }
     }
 
+    // Inserts transactions from file used in batch mode.
     public void launchBatchProcessing() throws RemoteException {
         System.out.println("[BANK] Processing transaction batch...");
         try{
             // Read all transactions from supplied file
             List<String> transactions = Utils.readAllLines(new File(transactionFileName));
             for (String line : transactions) {
-                Thread.sleep(ThreadLocalRandom.current().nextLong(500, 1501));
+                Thread.sleep(ThreadLocalRandom.current().nextLong(500, 1501)); // random value as described in assignment
                 // Will build the outstanding transactions collection for every read line
                 parser.buildOutstandingTransactions(line);
             }
@@ -184,6 +197,7 @@ public class BankServer {
         }
     }
 
+    // getter
     public BankRepository getRepository(){
         return this.repository;
     }

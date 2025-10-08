@@ -13,19 +13,35 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class BankRepository{
 
+    // Map for storing the information about every currency (Account value, name, rateToUsd)
     private Map<String, CurrencyInfo> currencies;
+
+    // Where transactions to be sent are stored
     private final List<Transaction> outstandingCollections = new CopyOnWriteArrayList<>();
 
+    // Executed transactions and their timestamps when executed
     private final Map<Transaction, LocalTime> transactionTimeMap = new HashMap<>();
     private LocalTime executionTimestamp;
+
+    // Name of the account for example group3
     private final String accountName;
+
+    // Where executed transaction go
     private final List<Transaction> executedList = new CopyOnWriteArrayList<>();
+
+    // How many orders have been executed by every bank thus far
     private AtomicLong orderCounter = new AtomicLong(0);
+
+    // How many orders this bank has added to outstandingCollections
     private final AtomicLong outstandingCounter = new AtomicLong(0);
 
-    private final MessageDeliveryService messageDeliveryService; // This holds the stub to the MDS
+    // This holds the stub to the MDS
+    private final MessageDeliveryService messageDeliveryService;
+
+    // This holds the name of the bank. Used for setting transaction id
     private final String bankBindingName;
 
+    // constructor
     public BankRepository(String accountName, String bankBindingName, MessageDeliveryService messageDeliveryService, String pathToCurrencyFile){
         this.bankBindingName = bankBindingName;
         this.currencies = initializeCurrency(pathToCurrencyFile);
@@ -33,6 +49,9 @@ public class BankRepository{
         this.accountName = accountName;
     }
 
+    // Checks what <currency> is by adding every other currency to it
+    // Defaults to dollar if currency is null
+    // Runs when called
     public void getQuickBalance(String currency) {
 
         currency = (currency != null) ? currency : "USD";
@@ -52,6 +71,7 @@ public class BankRepository{
         log("(" + now.format(formatter) + ") getQuickBalance " + currency + ". Total Balance: " + totalBalance);
     }
 
+    // For outputting the results of bank execution
     private void log(String message) {
         // Directory to store logs
         String dir = "results";
@@ -70,7 +90,7 @@ public class BankRepository{
         }
     }
 
-    
+    // Deposits <amount> into <currency>
     public void deposit(String currency, double amount) {
         currencies.get(currency).add(amount);
         LocalTime now = LocalTime.now();
@@ -78,6 +98,8 @@ public class BankRepository{
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         log("(" + now.format(formatter) + ") deposit " + currency + " " + amount);
     }
+
+    // adds a <percent> to <currency> or all currencies if <currency> is null
     public void addInterest(String currency, double percent) {
         LocalTime now = LocalTime.now();
         executionTimestamp = now;
@@ -95,6 +117,9 @@ public class BankRepository{
         }
     }
 
+    // Checks what <currency> is by adding every other currency to it
+    // Defaults to dollar if currency is null
+    // Runs when it gets broadcasted back after being sent as a part of the view to mds
     public void getSyncedBalanceSmart(String currency) {
 
         currency = (currency != null) ? currency : "USD";
@@ -114,6 +139,9 @@ public class BankRepository{
         log("(" + now.format(formatter) + ") getSyncedBalanceSmart " + currency + ". Total Balance: " + totalBalance);
     }
 
+    // Checks what <currency> is by adding every other currency to it
+    // Defaults to dollar if currency is null
+    // Runs when it gets notified and outstandingCollections is empty
     public void getSyncedBalanceNaive(String currency) {
 
         currency = (currency != null) ? currency : "USD";
@@ -149,12 +177,15 @@ public class BankRepository{
         t.start();
     }
 
+    // Notifies getSyncedBalanceNaive thread
     public void notifyGetSyncedBalance() {
         synchronized (outstandingCollections) {
             outstandingCollections.notifyAll();
         }
     }
 
+
+    // Asks MDS for information about current members with same account
     public void memberInfo(String groupName) throws RemoteException{
         System.out.println("[BANK] Getting members for group " + groupName + ":");
         LocalTime now = LocalTime.now();
@@ -166,13 +197,14 @@ public class BankRepository{
         }
     }
 
-     // (5) getHistory
+    // Shows the current state of executedList
+    // Shows the current state of outstandingCollections
     public void getHistory() {
         StringBuilder sb = new StringBuilder();
-        long start = orderCounter.get() - executedList.size();
+        long start = orderCounter.get() - executedList.size(); // Added logic for the numbering of each transaction
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         sb.append("[BANK] Transaction history:\n");
-
+ 
         sb.append("\tExecuted transactions:\n");
         for (int i = 0; i < executedList.size(); i++) {
             Transaction t = executedList.get(i);
@@ -195,7 +227,7 @@ public class BankRepository{
         System.out.println(sb);
     }
 
-    // (6) checkTxStatus <unique_id>
+    // Checks if a transaction with <uniqeId> id is executed or not
     public void checkTxStatus(String uniqueId) {
         for (Transaction t : outstandingCollections) {
             System.out.print(t.getUniqueId());
@@ -215,7 +247,7 @@ public class BankRepository{
         System.out.println("[BANK] TRANSACTION ´" + uniqueId + "´ IS APPLIED");
     }
 
-     // (7) cleanHistory – clean executed_list (not counter)
+     // clears executed_list (but doesnt reset orderCounter)
     public void cleanHistory() {
         executedList.clear();
         LocalTime now = LocalTime.now();
@@ -223,6 +255,7 @@ public class BankRepository{
         log("(" + now.format(formatter) + ") cleanHistory");
     }
 
+    // Sleeps the thread that calls it
     public void sleep(double seconds) throws InterruptedException {
         LocalTime now = LocalTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -231,6 +264,9 @@ public class BankRepository{
         try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 
+    // Exits the process thats being run after outputting the result of currencies
+    // Calls System.exit for batch mode, but not for interactive mode.
+    // This is cause Interactive mode is run on a thread in 1 jvm.
     public void exit(boolean isInteractive) throws RemoteException {
         System.out.println("[BANK] Exiting...");
 
@@ -246,12 +282,26 @@ public class BankRepository{
         }
     }
 
+    // Adds to outstandingCollections
     public void addOutstandingTransaction(Transaction transaction){
         outstandingCollections.add(transaction);
         outstandingCounter.incrementAndGet();
     }
 
+    // Adds to executedList and transactionTimeMap
+    public void addToExecutedList(Transaction tAdd){
+        executedList.add(tAdd);
+        transactionTimeMap.put(tAdd, executionTimestamp);
+    }
 
+    // Setting the state for replicas that need to get synchronized with existing banks
+    public void setState(Pair snapshot){
+        this.orderCounter = new AtomicLong(snapshot.getOrderCounter());
+        this.currencies = snapshot.getCurrencies();
+    }
+
+
+    // Reads a rate file to initialize the currencies all with 0 value at the start
     @SuppressWarnings("CallToPrintStackTrace")
     private Map<String, CurrencyInfo> initializeCurrency(String pathToRateFile){
         List<String> lines;
@@ -275,6 +325,7 @@ public class BankRepository{
         return retValue;
     }
 
+    // Getters
     public String getBankBindingName() {
          return bankBindingName;
     }
@@ -291,22 +342,12 @@ public class BankRepository{
         return executedList;
     }
 
-    public void addToExecutedList(Transaction tAdd){
-        executedList.add(tAdd);
-        transactionTimeMap.put(tAdd, executionTimestamp);
-    }
-
     public AtomicLong getOrderCounter(){
         return orderCounter;
     }
 
     public Map<String, CurrencyInfo> getCurrencies(){
         return currencies;
-    }
-
-    public void setState(Pair snapshot){
-        this.orderCounter = new AtomicLong(snapshot.getOrderCounter());
-        this.currencies = snapshot.getCurrencies();
     }
 
     public String getAccountName() {
