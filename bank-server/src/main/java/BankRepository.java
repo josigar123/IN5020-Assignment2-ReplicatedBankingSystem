@@ -34,6 +34,9 @@ public class BankRepository{
     }
 
     public void getQuickBalance(String currency) {
+
+        currency = (currency != null) ? currency : "USD";
+
         double totalBalance = currencies.get(currency).getAccountValue();
 
         for(String currString: currencies.keySet()){
@@ -93,6 +96,9 @@ public class BankRepository{
     }
 
     public void getSyncedBalanceSmart(String currency) {
+
+        currency = (currency != null) ? currency : "USD";
+
         double totalBalance = currencies.get(currency).getAccountValue();
 
         for(String currString: currencies.keySet()){
@@ -109,6 +115,10 @@ public class BankRepository{
     }
 
     public void getSyncedBalanceNaive(String currency) {
+
+        currency = (currency != null) ? currency : "USD";
+        final String finalCurrency = currency;
+
         Thread t = new Thread(() -> {
             synchronized (outstandingCollections) {
                 try 
@@ -117,19 +127,19 @@ public class BankRepository{
                         outstandingCollections.wait();
                     }
                     
-                    double totalBalance = currencies.get(currency).getAccountValue();
+                    double totalBalance = currencies.get(finalCurrency).getAccountValue();
 
                     for(String currString: currencies.keySet()){
-                        if(!currString.equals(currency)){
+                        if(!currString.equals(finalCurrency)){
                             double amountPresent = currencies.get(currString).getAccountValue();
                             double amountPresentInDollar = amountPresent * currencies.get(currString).getRate();
-                            totalBalance += amountPresentInDollar / currencies.get(currency).getRate();
+                            totalBalance += amountPresentInDollar / currencies.get(finalCurrency).getRate();
                         }
                     }
 
                     LocalTime now = LocalTime.now();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                    log("(" + now.format(formatter) + ") getSyncedBalanceNaive " + currency + ". Total Balance: " + totalBalance);
+                    log("(" + now.format(formatter) + ") getSyncedBalanceNaive " + finalCurrency + ". Total Balance: " + totalBalance);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }

@@ -39,36 +39,20 @@ public class CommandParser {
 
         try {
             switch (cmd.toLowerCase()) {
-                case "memberinfo", "gethistory", "cleanhistory", "exit", "exitinteractive":
+                case "memberinfo", "gethistory", "cleanhistory", "exit", "exitinteractive", "getsyncedbalance", "getquickbalance":
                     return true;
-                case "getquickbalance":
-                    if (tokens.length < 2) {
-                        System.out.println("[BANK] [ERROR] Usage: getQuickBalance <currency>");
-                        break;
-                    }
-                    return true;
-
-                case "getsyncedbalance":
-                    if (tokens.length < 2) {
-                        System.out.println("[BANK] [ERROR] Usage: getSyncedBalance <currency>");
-                        break;
-                    }
-                    return true;
-
                 case "deposit":
                     if (tokens.length < 3) {
                         System.out.println("[BANK] [ERROR] Usage: deposit <currency> <amount>");
                         break;
                     }
                     return true;
-
                 case "addinterest":
                     if (tokens.length < 2) {
                         System.out.println("[BANK] [ERROR] Usage: addInterest [currency] <percent>");
                         break;
                     }
                     return true;
-
                 case "checktxstatus":
                     if (tokens.length < 2) {
                         System.out.println("[BANK] [ERROR] Usage: checkTxStatus <id>");
@@ -104,10 +88,20 @@ public class CommandParser {
                     break;
 
                 case "getquickbalance":
+                    if(tokens.length == 1){
+                        repository.getQuickBalance(null);
+                        break;
+                    }
+
                     repository.getQuickBalance(tokens[1]);
                     break;
 
                 case "getsyncedbalance":
+                    if(tokens.length == 1){
+                        repository.getSyncedBalanceSmart(null);
+                        break;
+                    }
+
                     repository.getSyncedBalanceSmart(tokens[1]);
                     //repository.getSyncedBalanceNaive(tokens[1]);
                     break;
