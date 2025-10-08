@@ -1,5 +1,7 @@
 import java.io.Serializable;
 
+// A seralizable record class for a transaction
+// A transaction has a command that must be pares, along with its unique ID
 public record Transaction(String command, String uniqueId) implements Serializable {
 
     public Transaction{
